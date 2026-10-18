@@ -7,6 +7,7 @@ import {UtteranceBuffer} from './audio';
 import {library} from '../src/exercises/engine';
 import type {AgentAction,ActionResult} from '../src/agent/actions';
 import type {AccessStore} from './access';
+import {ModelUnavailableError} from './model-client';
 export const poseContextSchema=z.object({exercise:z.string().max(80),rep:z.number().min(0).max(10000),tracking:z.enum(['reliable','unreliable']),measuredAngles:z.record(z.number().min(-360).max(360)),cue:z.string().max(240),score:z.number().min(0).max(100).nullable()});
 const resultSchema=z.object({ok:z.boolean(),message:z.string().max(1500),data:z.unknown().optional(),requiresUserAction:z.boolean().optional()});
 const coachingSchema=z.object({kind:z.enum(['correction','tracking','encouragement']),text:z.string().max(400),measurement:z.object({feature:z.string().max(40),value:z.number().min(0).max(180),min:z.number(),max:z.number()}).optional()});
@@ -33,7 +34,7 @@ export class NvidiaVoiceSession {
  private async respond(text:string,signal:AbortSignal){
   if(++this.turns>40)throw new Error('Session turn limit reached. Reconnect to continue.');
   this.send({type:'transcript',text});if(!quickAction(text))this.charge();
-  const plan=await planAgent(text,this.state,this.history,signal);if(signal.aborted)return;
+  let plan;try{plan=await planAgent(text,this.state,this.history,signal,()=>this.charge());}catch(error){if(signal.aborted)return;if(error instanceof ModelUnavailableError){await this.speech('The decision models are busy. I have not changed anything. Please try a short command or use the app buttons.',signal);return;}throw error;}if(signal.aborted)return;
   const results:ActionResult[]=[];
   for(const action of plan.actions.slice(0,4)){if(signal.aborted)return;results.push(await this.action(action,signal));}
   const receipt=results.length?results.map(r=>r.message).join(' '):plan.text;

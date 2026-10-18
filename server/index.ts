@@ -25,7 +25,7 @@ const imageModel=process.env.NVIDIA_VISION_MODEL??'nvidia/nemotron-3.5-super-vl-
 function authorized(req:express.Request,res:express.Response){if(!access.authorize(req.headers.authorization)){res.status(401).json({error:'App session expired. Please retry.'});return false;}return true;}
 function budget(res:express.Response){if(!access.consume()){res.status(429).json({error:'The app’s daily AI allowance is used. Local tracking and spoken corrections remain available.'});return false;}return true;}
 
-app.get('/health',(_req,res)=>res.json({status:'ok',version:'0.4.0',theme:'light',agentActions:[...agentActions],voiceConfigured:nvidiaReady()&&textReady(),voiceProvider:nvidiaReady()?'nvidia':null,speechRecognition:'parakeet-offline-short-utterances',speechSynthesis:'magpie',voiceLanguage:nvidiaConfig.language,anonymousSessions:anonymous,textProvider:process.env.TEXT_PROVIDER??'gemini',historyStorage:'device-only',videoUpload:false,foodPhotoUpload:'selected-photo-with-consent-only'}));
+app.get('/health',(_req,res)=>res.json({status:'ok',version:'0.4.1',theme:'light',agentActions:[...agentActions],voiceConfigured:nvidiaReady()&&textReady(),voiceProvider:nvidiaReady()?'nvidia':null,speechRecognition:'parakeet-offline-short-utterances',speechSynthesis:'magpie',voiceLanguage:nvidiaConfig.language,anonymousSessions:anonymous,textProvider:process.env.TEXT_PROVIDER??'gemini',decisionModel:nvidiaConfig.textModel,decisionFallbackModel:process.env.NVIDIA_TEXT_FALLBACK_MODEL??'nvidia/nemotron-3-super-120b-a12b',decisionDeadlineMs:19000,historyStorage:'device-only',videoUpload:false,foodPhotoUpload:'selected-photo-with-consent-only'}));
 app.post('/sessions',(req,res)=>{
  if(!access.allow(req.ip??'unknown')){res.status(429).json({error:'Too many session attempts. Please wait a minute.'});return;}
  const parsed=z.object({clientId:z.string().uuid().optional(),accessCode:z.string().max(256).optional()}).strict().safeParse(req.body);
@@ -38,11 +38,11 @@ app.post('/sessions',(req,res)=>{
 app.post('/agent',async(req,res)=>{
  if(!authorized(req,res))return;const body=z.object({text:z.string().min(1).max(1500),context:appStateSchema}).safeParse(req.body);
  if(!body.success){res.status(400).json({error:'Invalid agent request.'});return;}if(!budget(res))return;
- try{const result=await planAgent(body.data.text,body.data.context);res.json({...result,source:process.env.TEXT_PROVIDER==='nvidia'?'nvidia-agent':'cloud-agent'});}catch{res.status(502).json({error:'The AI model is unavailable. Try again or use the app controls.'});}
+ try{const result=await planAgent(body.data.text,body.data.context,[],undefined,()=>{if(!access.consume())throw new Error('Daily model allowance reached');});res.json({...result,source:process.env.TEXT_PROVIDER==='nvidia'?'nvidia-agent':'cloud-agent'});}catch{res.status(502).json({error:'The decision models are busy. No app action was executed. Use the app controls or try again shortly.'});}
 });
 for(const task of ['explanations','summaries','plans'])app.post(`/ai/${task}`,async(req,res)=>{
  if(!authorized(req,res))return;const input=z.object({facts:z.string().max(12000)}).safeParse(req.body);if(!input.success){res.status(400).json({error:'Expected a bounded facts string.'});return;}if(!budget(res))return;
- try{res.json({text:await explainText(task,input.data.facts),source:'cloud-ai',unvalidated:true});}catch{res.status(502).json({error:'AI response unavailable. Local coaching remains available.'});}
+ try{res.json({text:await explainText(task,input.data.facts,undefined,()=>{if(!access.consume())throw new Error('Daily model allowance reached');}),source:'cloud-ai',unvalidated:true});}catch{res.status(502).json({error:'AI response unavailable. Local coaching remains available.'});}
 });
 
 const foodEstimateSchema=z.object({name:z.string().min(1).max(100),per100g:nutrientsSchema,uncertainty:z.string().min(1).max(1200)});

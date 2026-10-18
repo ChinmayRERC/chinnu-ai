@@ -11,7 +11,7 @@ export const nvidiaConfig={
  asrFunction:process.env.NVIDIA_ASR_FUNCTION_ID??'d3fe9151-442b-4204-a70d-5fcc597fd610',
  language:process.env.NVIDIA_LANGUAGE??'en-US',
  voice:process.env.NVIDIA_VOICE??'',
- textModel:process.env.NVIDIA_TEXT_MODEL??'nvidia/nemotron-3.5-lightning-30b-a3b'
+ textModel:process.env.NVIDIA_TEXT_MODEL??'nvidia/nemotron-3.5-super-vl-120b-a12b'
 };
 type Config={model_config:{model_name:string;parameters:Record<string,string>}[]};
 type Synthesis={audio:Buffer};

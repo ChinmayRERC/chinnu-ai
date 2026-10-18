@@ -2,7 +2,7 @@ import {z} from 'zod';
 export const agentActions=['navigate','open_exercise','show_guide','control_session','get_session_status','set_coaching','start_breathing','stop_breathing','log_checkin','get_progress','get_plan','show_latest_report','export_timeline','open_video_picker','open_camera','delete_data','log_water','log_metric','search_foods','log_food','get_daily_summary','create_reminder','start_fast','stop_fast'] as const;
 export const actionSchema=z.object({
  action:z.enum(agentActions),
- page:z.enum(['Today','Train','Progress','Journal','Settings','Nutrition','Health','Plans','More']).optional(),
+ page:z.enum(['Today','Train','Progress','Journal','Settings','Nutrition','Health','Plans','More']).describe('Health: enter/view water, sleep, weight, steps, activity or glucose logs. Nutrition: food diary/recipes/photos. Train: exercises. Progress: session history. Journal: check-ins. Plans: routines. More: reports/backups. Today: home overview only.').optional(),
  exerciseId:z.enum(['squat','pushup','lunge','plank','curl','hinge','mountain','warrior','tree','chair','triangle','dog','cobra','child','breathing']).optional(),
  command:z.enum(['pause','resume','stop','pain']).optional(),
  enabled:z.boolean().optional(),

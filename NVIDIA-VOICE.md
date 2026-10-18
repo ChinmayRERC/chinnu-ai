@@ -10,7 +10,7 @@ The operator can use one `NVIDIA_API_KEY` for the hosted services. Both supplied
 
 - **Magpie:** gRPC `RivaSpeechSynthesis` at `grpc.nvcf.nvidia.com:443`, function `877104f7-e885-42b9-8de8-f6e4c6303969`. The config lists `Magpie-Multilingual.EN-US.Aria.Calm`; synthesis is mono PCM16 at 22,050 Hz.
 - **Parakeet:** gRPC `RivaSpeechRecognition`, function `d3fe9151-442b-4204-a70d-5fcc597fd610`. The config exposed `parakeet-tdt-0.6b-en-US-asr-offline`, English only. Short finalized utterances are submitted using Recognize; this is not a word-by-word streaming recognizer.
-- **Nemotron:** hosted OpenAI-compatible text/tool calls using `nvidia/nemotron-3.5-lightning-30b-a3b`, with thinking disabled to reduce conversational latency. Direct tool calling and a short text response were tested. General-model latency varied around 12–18 seconds in the initial checks; it is not claimed to be instant.
+- **Nemotron decisions (backend v0.4.1):** primary `nvidia/nemotron-3.5-super-vl-120b-a12b`, fallback `nvidia/nemotron-3-super-120b-a12b`. Thinking is disabled, decision output is capped at 512 tokens, and the entire decision has a 19-second deadline (8-second primary attempt, up to 10-second fallback). Both full-contract tests returned the correct Health action: primary about 0.9 seconds, forced-failure fallback about 1.4 seconds. These are individual observations, not latency guarantees. The earlier lightning model is no longer primary.
 - **Vision:** `nvidia/nemotron-3.5-super-vl-120b-a12b` accepted a synthetic image and returned a description. Actual food-image accuracy is not established; nutrition estimates always require review.
 
 ## Pipeline
@@ -62,3 +62,9 @@ These tests use generated synthetic test speech, never an unconsented microphone
 The same protocol test passed against the public Render service. A separate real Chrome browser test used a generated WAV as a fake microphone: the actual AudioWorklet path sent speech, Parakeet transcribed it, the app navigated to Progress, and audio was delivered to browser playback. No credential/access code was entered into that test client. The Oppo v0.4 Settings screen and text navigation were also checked without an access-code input. These tests do not establish recognition quality for the user's real microphone, accent or noisy gym.
 
 Source protocol notices are in `server/protos/`. HTTP/model interfaces and hosted function IDs can change; retest rather than assuming a catalog listing proves speech access.
+
+## Provider timeout fix
+
+`server/model-client.ts` owns bounded requests and validates the provider envelope. It rejects `[ERROR: Agent failed ... processsingleitemagent ...]`, empty/None completions, non-success statuses and invalid app tool arguments. A provider error disguised as HTTP 200 is never spoken as a normal assistant response. At most two distinct models are tried; a user interrupt stops the request rather than triggering another model. Each fallback consumes another provider-budget unit. Content-free timing/model outcome logs support diagnosis without recording user text, keys or audio.
+
+The large image-reasoning example (thinking enabled, 16,384 tokens and streaming reasoning) is not used for action selection. Selected food photos remain a separate, consented vision request. If both decision models are busy, no proposed action is executed; the voice gateway speaks a concise failure and continues listening when its speech provider remains available.

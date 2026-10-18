@@ -65,7 +65,8 @@ node --env-file=.env --import tsx server/index.ts
 
 The deployed configuration uses:
 
-- Text: `nvidia/nemotron-3.5-lightning-30b-a3b`, thinking disabled for conversational latency.
+- Decision primary: `nvidia/nemotron-3.5-super-vl-120b-a12b`, thinking disabled and 512 output tokens.
+- Decision fallback: `nvidia/nemotron-3-super-120b-a12b`; at most one different-model fallback, with a 19-second total deadline. HTTP-200 error strings, empty replies and invalid app tools are rejected. The voice session can speak a concise failure without disconnecting if both decision models are unavailable.
 - Speech recognition: hosted Parakeet TDT English offline recognizer.
 - Speech output: `Magpie-Multilingual.EN-US.Aria.Calm`, PCM 22,050 Hz.
 - Selected-photo vision: `nvidia/nemotron-3.5-super-vl-120b-a12b`.
