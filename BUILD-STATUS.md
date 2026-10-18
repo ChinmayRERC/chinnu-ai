@@ -1,55 +1,61 @@
-# Build status — 2026-10-18
+# Chinnu AI v0.2.0 — build and deployment status
+
+Verified 2026-10-18.
 
 ## Delivered
 
-- `../chinnu-ai-debug.apk` — v0.1.1 (versionCode 2), 21,252,895 bytes; debug signed.
-- SHA-256: `02ca9c9a3a12c728e58ad3dffbb43599a8af680f19eaf24c529c1a4875d7b870`.
-- Web production build in `dist/`.
-- React/Capacitor source, local pose model/WASM, movement engine, storage, reports, journal and optional cloud voice integration.
-- Render Blueprint and backend source, not deployed.
+- Android testing APK: `../chinnu-ai-debug.apk`, versionCode 3, versionName 0.2.0.
+- APK size: 21,412,204 bytes.
+- SHA-256: `1995c32c62bbf453a29502fb668dfa84dcc26d6b754074430d3f98b3ddcedf55`.
+- Installed and launched on Oppo CPH1933 / A5 2020, Android 11.
+- Web app and HTTP/WebSocket backend: https://chinnu-ai.onrender.com
+- Render service: `srv-dbacm1vbtjjs73eldevg`; region Singapore; free compute.
+- Verified live deployment: `dep-dbacplcs728c738uh42g`, application source commit `9723e28`.
+- Authorized private source repository: https://github.com/ChinmayRERC/chinnu-ai
+
+## Agent and visual instruction scope
+
+- Persistent text/voice app agent with an action audit.
+- Navigation, exercise setup, original step-image/animated guides, session status/control, spoken-cue toggles, breathing timer, explicit check-ins, progress, local plan suggestions, latest report and confirmed PDF export/data deletion.
+- Six gym and eight yoga configurations plus seated breathing, with expert-validation-pending labels.
+- Guides are original schematic illustrations with written steps and cautions, not filmed demonstrations or validated scoring references.
+- Automatic native Android speech for measured coaching, with Gemini proactive correction audio when connected.
+- Camera/file-picker permission gestures and export/deletion confirmations remain on device. The agent cannot bypass conservative restrictions or control unrelated apps.
 
 ## Executed verification
 
-- TypeScript frontend and production Vite build: passed.
+- Frontend TypeScript and Vite production build: passed.
 - Backend TypeScript check: passed.
-- Eleven deterministic engine/coaching/connectivity unit tests: passed.
-- Two Chrome browser integration tests: passed. Covered onboarding, conservative movement restrictions, persisted journal, labeled demo history and trainer opening without automatic cloud microphone activation.
-- Android `assembleDebug`: passed with isolated Java 21 and Android SDK 36.
-- APKSigner: APK Signature Scheme v2 verified, one signer.
-- Local backend health endpoint: HTTP 200.
-- Voice session without credentials: HTTP 503 with actionable configuration error.
+- Fourteen deterministic unit tests: passed.
+- Three Chrome browser integration tests: passed, covering onboarding, journal persistence, demo labels, automatic-coaching defaults, actionable connection diagnostics, agent navigation, schematic guides and restricted exercises.
+- Android `assembleDebug`: passed with Java 21 and SDK 36; APK installed successfully.
+- APK signature verification: v2 signature verified, one debug signer.
+- Render public `/health`: HTTP 200, version 0.2.0, 16 action types and voiceConfigured true.
+- Real Gemini text-agent requests returned `navigate/Progress` and `show_guide/squat` actions.
+- Actual phone → public Render → Gemini → app: request opened squat instructions and reference image on the Oppo; a second request navigated to Progress.
+- Public Render `wss://.../voice` authenticated. A typed live request caused a Settings tool call; the synthetic client supplied a tool result, then received generated audio. This verifies the remote voice/tool protocol, not microphone recognition accuracy.
+- Native Android speech engine accepted a test cue. Proactive Gemini correction audio was separately tested using clearly synthetic measurements.
+- No microphone recording or health-screening answers were submitted on the user's behalf during automated verification.
 
-## Device and Gemini connection update
+## Deployment details
 
-- v0.1.1 fixes generic fetch errors with specific localhost/Render diagnostics and a Test backend action.
-- Automatic spoken coaching is on by default, including persistent corrections, tracking-loss instructions and spaced measured-alignment encouragement.
-- Android-native TextToSpeech works independently of backend reachability; native engine accepted the test phrase.
-- Proactive Gemini correction audio was verified with a labeled synthetic measurement event through the updated relay.
-- Cause of reported failure: phone disconnected from ADB while configured for the USB-only localhost backend. Reconnected and forwarding restored; phone health request now returns HTTP 200.
+Paid service creation was rejected because the workspace needs payment information. A free service was deployed instead; cold starts can delay a connection. Client requests allow a bounded 65-second warm-up. Enable billing and select an always-on instance for reliable low-latency sessions.
 
-- Installed and launched successfully on connected Oppo CPH1933 (A5 2020), Android 11.
-- Gemini model-list authentication: HTTP 200.
-- Gemini Live setup handshake: confirmed.
-- Local voice relay received generated PCM audio at 24 kHz.
-- Phone WebView reached local backend `/health`: HTTP 200, voiceConfigured true.
-- Phone WebView authenticated and received generated voice audio through the USB-forwarded backend.
-- No microphone recording, health screening answers, or local-camera consent were submitted on the user's behalf. The app is at onboarding.
-- Local URL and demo access code were configured in phone app storage. The provider key remains in ignored `.env` with owner-only permissions, not in the APK.
-- Debug builds permit HTTP only for localhost/127.0.0.1 through a debug-only network configuration; release defaults remain HTTPS-only.
-- Local backend runs on port 10000; USB uses `adb reverse tcp:10000 tcp:10000`. Keep the Mac running and phone connected until a Render service is deployed.
+The Render GitHub integration could not directly fetch the private repository. A repo-specific read-only SSH deploy key and GitHub host-key pinning are stored as Render secret files. The official Render Express example supplies a public bootstrap; the build fetches actual Chinnu source privately. Render strips nested `.git` directories from restored build caches, so the build replaces its exclusively generated `chinnu-source` directory before a fresh clone. Autodeploy is off; deployments are explicit.
 
-## Not yet verified or complete
+Gemini Live model: `gemini-2.5-flash-native-audio-preview-12-2025` (connection/audio tested). Text-agent model: `gemini-3.8-flash` (actual tool output tested); older `gemini-2.5-flash` text access was rejected as retired for this project.
 
-- No real-person camera session or microphone conversation tested yet; no performance or real-video accuracy claim.
-- Provider-generated audio transport verified, but speaker playback/echo/user interruption still need a real microphone session.
-- No Render deployment credentials supplied; no services created and no credits spent.
-- Native camera/microphone capture, worker inference, SQLite migration, real calibration/progression, automatic live-degradation rest prompts and native iOS are not implemented in this alpha. Native Android speech output is implemented. See README for full limitations.
-- All movement thresholds remain expert-validation-pending.
-- npm audit leaves three moderate development-tool findings in the Capacitor CLI/xcode/uuid dependency chain. Runtime critical findings from initial installation were resolved by updating jsPDF and Vitest. Production code does not invoke the affected xcode CLI dependency.
+The phone's backend URL is the public HTTPS service, not localhost. Provider and deployment credentials remain in ignored owner-readable `.env` and server-side Render settings, not the APK/repository. Source commits were scanned for the configured credentials before initial publication.
 
-## Immediate next actions
+## Remaining limitations
 
-1. Complete onboarding on the Oppo and explicitly enable camera/voice to test actual camera operation and audio playback.
-2. Deploy the Render Blueprint from a repository you control and configure Gemini privately in Render environment settings.
-3. Enter Render URL and demo access code in app Settings; consent to cloud audio during a session.
-4. Validate actual live/video results and voice interaction before expanding to production readiness.
+- This is an agent-enabled alpha, not a medically validated or production-complete trainer.
+- Real-person exercise accuracy, speaker echo/barge-in and sustained 15+ FPS on the Oppo have not been established.
+- Native camera/microphone capture, worker inference, SQLite, calibration/body-proportion adaptation, robust progression, automatic live-degradation rest prompts and native iOS remain unimplemented. Native Android TTS is implemented.
+- Some yoga rules cover only a subset of the pose; Child's pose has a rest timer with no alignment score.
+- The animation is an original sketch, not actual exercise footage. No video/image is uploaded to the backend.
+- A user must complete screening and grant camera/microphone consent. Cloud voice and requested app results reach Gemini under provider terms. Local reports remain on device.
+- Open-source Kokoro/Whisper/LLM options are researched in `RENDER-MODELS.md`, not deployed. Render runs the gateway/web app; Gemini runs at its provider.
+- Runtime-critical dependency findings from the first installation were resolved. Three moderate development-tool advisories remain in the Capacitor CLI/xcode/uuid chain.
+
+See `AGENT-COMMANDS.md` for supported commands and `README.md` for build/run instructions.
