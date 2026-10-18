@@ -28,4 +28,6 @@ The old adapter trusted a successful HTTP response's completion content and coul
 
 These measurements are individual checks under current provider conditions, not a guarantee that external APIs always respond within a second. The client deadline bounds waiting, not provider-side inference cancellation or billing.
 
+Production deployment `dep-dbafoteq1p3s73bgp2l0` is live. The same paraphrase returned HTTP 200 and executed Health navigation in an isolated browser in ~1,450 ms. A public voice connection requested Health, received an explicit synthetic tool result, then generated 133,120 PCM bytes of spoken receipt. Both-failure recovery was verified locally: the friendly failure did not close the voice session and a subsequent quick command worked.
+
 This is a backward-compatible server patch. Existing v0.4 APK/browser clients can use it without re-entering credentials or reinstalling; refresh the browser for up-to-date assets if needed. Magpie and Parakeet speech providers are unchanged.

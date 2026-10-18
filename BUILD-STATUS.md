@@ -1,12 +1,24 @@
-# CHINNU-AI v0.4.0 — NVIDIA deployment receipt
+# CHINNU-AI v0.4.1 backend — NVIDIA deployment receipt
 
 Verified 2026-10-18.
+
+## Decision timeout reliability patch
+
+- Live backend deployment: `dep-dbafoteq1p3s73bgp2l0`, source commit `2eee0c8`, health version 0.4.1.
+- Decision primary `nvidia/nemotron-3.5-super-vl-120b-a12b`; one fallback `nvidia/nemotron-3-super-120b-a12b`.
+- Thinking disabled, 512-token decisions, at most two distinct attempts and a 19-second total deadline. Provider error strings disguised as HTTP 200, empty outputs and invalid tool proposals are rejected before execution.
+- Local real-primary test returned Health in ~933 ms. Deliberately invalid primary plus real fallback returned Health in ~1,441 ms.
+- Both decision models deliberately unavailable: voice spoke a concise failure, kept the same session and then accepted a quick Progress command. No raw provider failure was exposed.
+- Public deployed browser paraphrase test returned HTTP 200 and actually navigated to Health in ~1,450 ms, without writing health records or requiring a code/key.
+- Public voice connection returned the same Health decision, accepted a synthetic client's tool acknowledgement and generated 133,120 PCM bytes of Magpie speech.
+- 39 unit tests and backend TypeScript check passed; frontend production build passed. Render Blueprint API validation passed.
+- Existing installed v0.4 APK remains compatible; no reinstall is required for this server fix. Exact behavior and limitations: `DECISION-RELIABILITY.md`.
 
 ## Active delivery
 
 - Web app/backend: https://chinnu-ai.onrender.com/?v=0.4
 - Render service `srv-dbacm1vbtjjs73eldevg`, Singapore, free compute.
-- Live deployment `dep-dbaffce7bikc73eeeou0`, source commit `74a1f7e`.
+- The original v0.4 deployment was `dep-dbaffce7bikc73eeeou0`, source commit `74a1f7e`; the active backend is now the v0.4.1 patch above.
 - Private repository: https://github.com/ChinmayRERC/chinnu-ai
 - APK: `../chinnu-ai-debug.apk`, 21,351,911 bytes.
 - APK SHA-256: `3629109cadede95b526c8e271e1391b085375bbb24ccebc646c61bf642d0949d`.
@@ -24,7 +36,7 @@ Verified 2026-10-18.
 - One supplied NVIDIA credential successfully accessed both speech services and the hosted model catalog; Render is configured with one primary NVIDIA_API_KEY.
 - Magpie gRPC synthesis generated PCM16 audio at 22,050 Hz. Calm voice `Magpie-Multilingual.EN-US.Aria.Calm` is present in actual provider config and was tested.
 - Parakeet exposed an English offline recognizer and correctly transcribed generated speech “Open my progress.”
-- Nemotron text model `nvidia/nemotron-3.5-lightning-30b-a3b` returned a valid navigation tool call and a short response with thinking disabled. Initial general-model latency was about 12–18 seconds; fast explicit commands avoid this LLM hop.
+- The earlier lightning model returned valid responses but had variable latency; it is no longer primary. The current primary/fallback and actual full-contract checks are recorded in the patch section above. Fast explicit commands still bypass an unnecessary LLM hop.
 - Vision model `nvidia/nemotron-3.5-super-vl-120b-a12b` accepted a synthetic drawing and returned a description. Food recognition/nutrition accuracy is not established by that synthetic check.
 
 ## Executed checks
@@ -35,7 +47,7 @@ Verified 2026-10-18.
 - 5 Chrome integration tests passed; access-code field absence is asserted in Settings.
 - Render Blueprint API validation returned HTTP 200, valid true. Current service is API-managed; standalone Blueprint is not being synced over the custom private-source bootstrap.
 - Android `assembleDebug` passed and APK update installation succeeded.
-- Public Render health reports version 0.4.0, NVIDIA voice/text, anonymousSessions true and videoUpload false.
+- Public Render health now reports version 0.4.1, NVIDIA voice/text, anonymousSessions true, a 19-second decision deadline and videoUpload false.
 - Local and public Render synthetic speech protocol tests passed: automatic session → Magpie-generated test audio → Parakeet → Progress tool → synthetic client acknowledgement → Magpie spoken receipt.
 - Real deployed Chrome fake-microphone test passed: actual AudioWorklet capture/resampling, WebSocket audio, Parakeet transcription, actual Progress navigation and 299,008 audio bytes delivered to browser. No real microphone recording or access code was used.
 - Actual Oppo Settings shows zero application-access-code inputs and the NVIDIA voice heading. A text request navigated to Progress with an automatic public session. Phone was returned to Today.
