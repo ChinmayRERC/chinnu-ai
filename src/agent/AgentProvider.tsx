@@ -1,4 +1,4 @@
-import {createContext,useContext,useRef,useState,type ReactNode,type MutableRefObject} from 'react';
+import {createContext,useContext,useEffect,useRef,useState,type ReactNode,type MutableRefObject} from 'react';
 import {VoiceCoach} from '../feedback/voice';
 import {actionSchema,type ExecuteAction,type AgentAction,type ActionResult} from './actions';
 import {getBackendURL} from './config';
@@ -7,14 +7,15 @@ const Context=createContext<AgentState|null>(null);
 export function AgentProvider({children}:{children:ReactNode}){
  const voice=useRef<VoiceCoach|null>(null),executor=useRef<ExecuteAction|null>(null),session=useRef<ExecuteAction|null>(null),context=useRef<Record<string,unknown>>({});
  const [status,setStatus]=useState('Disconnected'),[caption,setCaption]=useState(''),[busy,setBusy]=useState(false),[events,setEvents]=useState<AgentState['events']>([]);
+ useEffect(()=>{const hide=()=>{if(document.hidden){voice.current?.disconnect();}};document.addEventListener('visibilitychange',hide);return()=>{document.removeEventListener('visibilitychange',hide);voice.current?.disconnect();};},[]);
  const execute:ExecuteAction=async input=>{const parsed=actionSchema.safeParse(input);if(!parsed.success)return{ok:false,message:'The requested action is not supported.'};let result:ActionResult;
   try{const sessionAction=['control_session','set_coaching','open_camera','open_video_picker'].includes(parsed.data.action);const handler=sessionAction?session.current:executor.current;result=handler?await handler(parsed.data):{ok:false,message:sessionAction?'Open an exercise first; no active trainer is available.':'Complete onboarding first.'};}catch{result={ok:false,message:'Action could not be completed. Your local data was preserved.'};}
   setEvents(e=>[...e.slice(-7),{action:parsed.data.action,result}]);return result;
  };
  async function connect(){voice.current?.disconnect();const next=new VoiceCoach(setStatus,setCaption,command=>{void execute({action:'control_session',command:command as AgentAction['command']});},execute);voice.current=next;await next.connect(getBackendURL(),localStorage.getItem('chinnu-access')??'');next.sendAppState(context.current);}
- async function submit(text:string){if(busy)return;setBusy(true);setCaption('Understanding your request…');try{
+ async function submit(text:string){if(busy)return;if(voice.current?.request(text)){setCaption('Request sent to the connected voice agent…');return;}setBusy(true);setCaption('Understanding your request…');try{
   const base=getBackendURL();if(!base)throw new Error('Set the Render backend URL in Settings first.');
-  const auth=await fetch(`${base}/sessions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessCode:localStorage.getItem('chinnu-access')??''}),signal:AbortSignal.timeout(15000)});const credentials=await auth.json();if(!auth.ok)throw new Error(credentials.error??'Agent access failed.');
+  const auth=await fetch(`${base}/sessions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({accessCode:localStorage.getItem('chinnu-access')??''}),signal:AbortSignal.timeout(65000)});const credentials=await auth.json();if(!auth.ok)throw new Error(credentials.error??'Agent access failed.');
   const response=await fetch(`${base}/agent`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${credentials.token}`},body:JSON.stringify({text,context:context.current}),signal:AbortSignal.timeout(30000)});const plan=await response.json();if(!response.ok)throw new Error(plan.error??'Agent request failed.');
   const results:ActionResult[]=[];for(const action of (plan.actions??[]).slice(0,4))results.push(await execute(action));
   setCaption(results.length?results.map(r=>r.message).join(' '):plan.text||'Tell me which app feature you want to use.');

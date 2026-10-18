@@ -10,7 +10,7 @@ export function backendURL(value:string){
 export function connectionHelp(url:string){return /https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/.test(url)
  ?'USB backend unreachable. Localhost works only while this phone is connected to your Mac and adb reverse tcp:10000 tcp:10000 is active. Reconnect USB or enter a deployed Render HTTPS URL in Settings. Automatic local spoken corrections still work.'
  :'Cannot reach the cloud backend. Check phone internet, the Render HTTPS URL and whether the service is running. Automatic local spoken corrections still work.';}
-async function request(url:string,options:RequestInit){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);try{return await fetch(url,{...options,signal:controller.signal});}finally{clearTimeout(timer);}}
+async function request(url:string,options:RequestInit){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),65000);try{return await fetch(url,{...options,signal:controller.signal});}finally{clearTimeout(timer);}}
 export async function checkBackend(value:string){const url=backendURL(value);let response:Response;try{response=await request(`${url}/health`,{});}catch{throw new Error(connectionHelp(url));}if(!response.ok)throw new Error(`Backend health check returned HTTP ${response.status}.`);return await response.json() as {status:string;voiceConfigured:boolean};}
 export class VoiceCoach {
  private socket?:WebSocket;private context?:AudioContext;private stream?:MediaStream;private node?:AudioWorkletNode;private source?:MediaStreamAudioSourceNode;private gain?:GainNode;private nextTime=0;private outputs:AudioBufferSourceNode[]=[];private version=0;private ready=false;private pendingUntil=0;
@@ -57,6 +57,7 @@ export class VoiceCoach {
  private stopOutput(){for(const source of this.outputs)try{source.stop();}catch{}this.outputs=[];this.nextTime=0;}
  sendContext(value:unknown){if(this.connected)this.socket!.send(JSON.stringify({type:'context',value}));}
  sendAppState(value:unknown){if(this.connected)this.socket!.send(JSON.stringify({type:'appState',value}));}
+ request(text:string){if(!this.connected)return false;this.socket!.send(JSON.stringify({type:'request',text:text.slice(0,1500)}));return true;}
  coach(event:CoachingEvent){if(!this.connected||this.busy)return false;this.socket!.send(JSON.stringify({type:'coach',value:event}));this.pendingUntil=Date.now()+10000;return true;}
  disconnect(){this.version++;this.ready=false;this.pendingUntil=0;const ws=this.socket;this.socket=undefined;if(ws){ws.onclose=null;ws.onerror=null;ws.onmessage=null;ws.close();}this.node?.disconnect();this.source?.disconnect();this.gain?.disconnect();this.stream?.getTracks().forEach(t=>t.stop());this.stopOutput();void this.context?.close();this.context=undefined;this.stream=undefined;this.status('Disconnected');}
 }

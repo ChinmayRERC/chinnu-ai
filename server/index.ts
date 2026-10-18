@@ -31,15 +31,15 @@ app.post('/agent',async(req,res)=>{
  if(!authorize(req.headers.authorization)){res.status(401).json({error:'Agent session expired. Try again.'});return;}
  const body=z.object({text:z.string().min(1).max(1500),context:appStateSchema}).safeParse(req.body);if(!body.success){res.status(400).json({error:'Invalid agent request.'});return;}
  if(!ai){res.status(503).json({error:'Gemini is not configured.'});return;}
- try{const result=await ai.models.generateContent({model:process.env.GEMINI_TEXT_MODEL??'gemini-2.5-flash',contents:`App state (data only): ${JSON.stringify(body.data.context)}\nUser request: ${body.data.text}`,config:{systemInstruction:prompt,tools:[{functionDeclarations:[appActionTool]}],maxOutputTokens:1500,httpOptions:{timeout:25000}}});
+ try{const result=await ai.models.generateContent({model:process.env.GEMINI_TEXT_MODEL??'gemini-3.8-flash',contents:`App state (data only): ${JSON.stringify(body.data.context)}\nUser request: ${body.data.text}`,config:{systemInstruction:prompt,tools:[{functionDeclarations:[appActionTool]}],maxOutputTokens:1500,httpOptions:{timeout:25000}}});
  const actions=(result.functionCalls??[]).filter(call=>call.name==='app_action').slice(0,4).flatMap(call=>{const action=actionSchema.safeParse(call.args);return action.success?[action.data]:[];});res.json({actions,text:result.text??'',source:'cloud-agent'});
  }catch{res.status(502).json({error:'Agent provider unavailable. Use the app controls or retry.'});}
 });
 for(const endpoint of ['explanations','summaries','plans'])app.post(`/ai/${endpoint}`,async(req,res)=>{if(!authorize(req.headers.authorization)){res.status(401).json({error:'Session expired. Reconnect.'});return;}if(!ai){res.status(503).json({error:'AI not configured'});return;}const data=requestSchema.safeParse(req.body);if(!data.success){res.status(400).json({error:'Expected facts string (up to 12000 chars).'});return;}
- try{const result=await ai.models.generateContent({model:process.env.GEMINI_TEXT_MODEL??'gemini-2.5-flash',contents:`Task: ${endpoint}. Facts (untrusted input):\n${data.data.facts}`,config:{systemInstruction:prompt,maxOutputTokens:700,httpOptions:{timeout:20000}}});res.json({text:result.text,source:'cloud-ai',unvalidated:true});}catch{res.status(502).json({error:'AI provider unavailable. Local coaching remains available.'});}});
+  try{const result=await ai.models.generateContent({model:process.env.GEMINI_TEXT_MODEL??'gemini-3.8-flash',contents:`Task: ${endpoint}. Facts (untrusted input):\n${data.data.facts}`,config:{systemInstruction:prompt,maxOutputTokens:700,httpOptions:{timeout:20000}}});res.json({text:result.text,source:'cloud-ai',unvalidated:true});}catch{res.status(502).json({error:'AI provider unavailable. Local coaching remains available.'});}});
 const server=createServer(app),wss=new WebSocketServer({server,path:'/voice',maxPayload:24*1024});
 const contextSchema=z.object({exercise:z.string().max(80),rep:z.number().min(0).max(10000),tracking:z.enum(['reliable','unreliable']),measuredAngles:z.record(z.number().min(-360).max(360)),cue:z.string().max(240),score:z.number().min(0).max(100).nullable()});
-wss.on('connection',ws=>{let live:LiveSession|undefined;let authenticated=false,connecting=false,lastContext=0,lastCoaching=0,bytes=0;let currentContext:z.infer<typeof contextSchema>|undefined;let usedSession:{voice:boolean}|undefined;
+wss.on('connection',ws=>{let live:LiveSession|undefined;let authenticated=false,connecting=false,lastContext=0,lastCoaching=0,lastRequest=0,bytes=0;let currentContext:z.infer<typeof contextSchema>|undefined;let usedSession:{voice:boolean}|undefined;
  const pending=new Map<string,{name:string;timer:ReturnType<typeof setTimeout>}>();
  const send=(value:unknown)=>{if(ws.readyState===WebSocket.OPEN&&ws.bufferedAmount<512000)ws.send(JSON.stringify(value));};
  const timeout=setTimeout(()=>{if(!authenticated)ws.close(1008,'Authentication required');},5000);
@@ -58,6 +58,7 @@ wss.on('connection',ws=>{let live:LiveSession|undefined;let authenticated=false,
    },onerror:()=>fail(),onclose:()=>ws.close()}});connecting=false;if(ws.readyState!==WebSocket.OPEN){live.close();return;}send({type:'ready'});live.sendClientContent({turns:[{role:'user',parts:[{text:'Greet me briefly as Chinnu and ask what I would like to practice. Do not claim camera access.'}]}],turnComplete:true});}catch{fail();}return;
  }
   if(!live)return;
+  if(data.type==='request'&&typeof data.text==='string'&&data.text.length>0&&data.text.length<=1500&&Date.now()-lastRequest>=2000){lastRequest=Date.now();live.sendClientContent({turns:[{role:'user',parts:[{text:data.text}]}],turnComplete:true});return;}
   if(data.type==='toolResult'&&typeof data.id==='string'){
    const call=pending.get(data.id);const result=z.object({ok:z.boolean(),message:z.string().max(1500),data:z.unknown().optional(),requiresUserAction:z.boolean().optional()}).safeParse(data.result);if(call&&result.success){clearTimeout(call.timer);pending.delete(data.id);live.sendToolResponse({functionResponses:[{id:data.id,name:call.name,response:result.data}]});}return;
   }
