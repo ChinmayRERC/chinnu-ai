@@ -1,0 +1,10 @@
+import {test,expect} from '@playwright/test';
+test('agent executes navigation and visual-guide actions and respects conservative restrictions',async({page})=>{
+ await page.goto('/');await page.getByPlaceholder('Your name').fill('Agent test');await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByLabel('Injury or pain').check();await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Find my flow'}).click();
+ await page.evaluate(()=>{localStorage.setItem('chinnu-backend','https://chinnu-test.invalid');localStorage.setItem('chinnu-access','test-only');});
+ await page.route('https://chinnu-test.invalid/sessions',route=>route.fulfill({json:{token:'test-token'}}));
+ await page.route('https://chinnu-test.invalid/agent',route=>{const {text}=route.request().postDataJSON();return route.fulfill({json:{actions:[text==='Progress'?{action:'navigate',page:'Progress'}:text==='Guide'?{action:'show_guide',exerciseId:'squat'}:{action:'open_exercise',exerciseId:'pushup'}]}});});
+ await page.getByRole('button',{name:'Ask Chinnu'}).click();await page.getByLabel('Message Chinnu').fill('Progress');await page.getByRole('button',{name:'Send agent message'}).click();await expect(page.getByRole('heading',{name:'Small steps add up.'})).toBeVisible();
+ await page.getByLabel('Message Chinnu').fill('Guide');await page.getByRole('button',{name:'Send agent message'}).click();await expect(page.getByRole('heading',{name:'How to do Squat'})).toBeVisible();await expect(page.getByRole('img',{name:/Squat schematic/})).toBeVisible();
+ await page.getByRole('button',{name:'Close exercise guide'}).click();await page.getByLabel('Message Chinnu').fill('Restricted');await page.getByRole('button',{name:'Send agent message'}).click();await expect(page.locator('.agent-caption')).toContainText('restricted by conservative mode');await expect(page.getByRole('heading',{name:'Push-up',exact:true})).not.toBeVisible();
+});
