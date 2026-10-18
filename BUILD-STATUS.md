@@ -1,68 +1,58 @@
-# Chinnu AI v0.3.0 — build and deployment receipt
+# CHINNU-AI v0.4.0 — NVIDIA deployment receipt
 
 Verified 2026-10-18.
 
-## Delivered artifacts
+## Active delivery
 
-- Web app and HTTP/WebSocket backend: https://chinnu-ai.onrender.com
-- Render service: `srv-dbacm1vbtjjs73eldevg`, Singapore, free compute.
-- Verified live deployment: `dep-dbadvhc9v7es738552pg`, application commit `7064cf9`.
-- Private source: https://github.com/ChinmayRERC/chinnu-ai
-- Android APK: `../chinnu-ai-debug.apk`, versionCode 4, versionName 0.3.0.
-- APK size: 21,351,451 bytes.
-- SHA-256: `ed17ca058565d76787c5107b11b8c13eaff4e97d826cf024c451f470ca4ee7bf`.
-- APK Signature Scheme v2 verification passed, one debug signer.
+- Web app/backend: https://chinnu-ai.onrender.com/?v=0.4
+- Render service `srv-dbacm1vbtjjs73eldevg`, Singapore, free compute.
+- Live deployment `dep-dbaffce7bikc73eeeou0`, source commit `74a1f7e`.
+- Private repository: https://github.com/ChinmayRERC/chinnu-ai
+- APK: `../chinnu-ai-debug.apk`, 21,351,911 bytes.
+- APK SHA-256: `3629109cadede95b526c8e271e1391b085375bbb24ccebc646c61bf642d0949d`.
+- Installed as an update on Oppo A5 2020 / CPH1933: versionCode 5, versionName 0.4.0. Existing local data retained.
 
-## v0.3 product additions
+## Removed user setup requirement
 
-- Original soft light theme, consistent responsive navigation/cards/forms, light native splash/system bars and animated CHINNU-AI wordmark. Reduced-motion preference is respected.
-- Nutrition diary with 26 generic rounded starter entries, custom labels, favorites, search, gram portions, meal types, edit/delete, macros/fiber and known-data micronutrient coverage.
-- Six original recipes with ingredient review, preparation steps and atomic logging.
-- Optional separately consented food-photo review through Gemini; estimates never log automatically. Product label lookup via manually entered Open Food Facts barcode digits.
-- Manual water, weight, sleep-episode, additional-step, waist, activity-minute and glucose-note trackers, chosen goals and history.
-- Editable meal/workout/yoga plans, pause/resume, conservative-mode restrictions and personal completion dates.
-- In-app due reminders plus opt-in daily Android local notifications. Inexact scheduling is used; exact-alarm permission is absent from the final APK.
-- Seven-day real-data reports, private challenges, editable profile, PDF timeline, JSON backup/validated restore, FAQ, diagnostics and explicit disconnected-integration status.
-- Wellness-aware text/voice agent: logging, search, daily summary, reminder creation and neutral eating-break timer in addition to existing navigation/training tools.
-- Existing database v1 migrates to v2; deletion and exports include new tables and cancel native schedules where appropriate.
+- No provider-key or application-access-code input in the app UI.
+- Anonymous short-lived server sessions connect automatically. Operator credentials remain on Render, never in the frontend/APK.
+- The active Render configuration selects NVIDIA text/image models, Parakeet ASR and Magpie TTS. Old Gemini environment variables are preserved for operator rollback but are not the selected deployed route. No Gemini live-voice route remains in v0.4.
+- HTML responses are no-store. `?v=0.4` bypasses any old browser cache; APK clients need the installed update.
 
-## Executed verification
+## Verified NVIDIA services
 
-- Frontend TypeScript and production Vite build: passed.
-- Backend TypeScript check: passed.
-- Twenty-four unit tests: passed. Include geometry/phase handling, spoken coaching scheduling, agent boundaries, v1 database migration, nutrition/source snapshot preservation, atomic meal logging, metric units/ranges, restricted plans/fasting, backup restore and complete table deletion.
-- Five Chrome integration tests: passed. Cover onboarding, conservative restrictions, journal persistence, real/demo separation, cloud connection diagnostics, agent actions/guides, light UI, meal portion editing, saved water logs, in-app reminders, saved plans and honest integration status.
-- Mobile-width light Home and Health screenshots inspected.
-- Android `assembleDebug`: passed with Java 21 / Android SDK 36. A timed-out Kotlin compiler dependency was fetched explicitly and checked against Maven Central's published SHA-1 before completing the build.
-- Merged APK permission inventory inspected: camera/microphone/internet, notification/boot/wake permissions; no exact-alarm permission.
-- Public Render health: HTTP 200, version 0.3.0, light theme, 24 agent action types, voiceConfigured true, videoUpload false.
-- Actual public Gemini agent returned `log_water` amount 250; the isolated test browser executed it and displayed 250 ml in Health. No test water entry was inserted into the user's phone data.
-- Actual Gemini agent returned Nutrition navigation. One earlier local provider request failed transiently; subsequent direct and public tests passed. Manual app controls remain the fallback.
-- Food-photo endpoint rejects a non-consented request (HTTP 400).
-- Public food-photo endpoint accepted a synthetic original drawing, returned HTTP 200 with Unknown food, unverified true and requiresReview true. This verifies schema/review flow, not real-food recognition accuracy.
-- Existing Gemini Live voice/audio tool round trip and native Android TTS were verified during v0.2; v0.3 retains that integration. No new real-microphone accuracy claim.
+- One supplied NVIDIA credential successfully accessed both speech services and the hosted model catalog; Render is configured with one primary NVIDIA_API_KEY.
+- Magpie gRPC synthesis generated PCM16 audio at 22,050 Hz. Calm voice `Magpie-Multilingual.EN-US.Aria.Calm` is present in actual provider config and was tested.
+- Parakeet exposed an English offline recognizer and correctly transcribed generated speech “Open my progress.”
+- Nemotron text model `nvidia/nemotron-3.5-lightning-30b-a3b` returned a valid navigation tool call and a short response with thinking disabled. Initial general-model latency was about 12–18 seconds; fast explicit commands avoid this LLM hop.
+- Vision model `nvidia/nemotron-3.5-super-vl-120b-a12b` accepted a synthetic drawing and returned a description. Food recognition/nutrition accuracy is not established by that synthetic check.
 
-## Phone installation status
+## Executed checks
 
-After the phone reconnected, v0.3 was installed with `adb install -r` on Oppo CPH1933 / A5 2020, Android 11. Package manager confirms versionCode 4 and versionName 0.3.0. The existing profile loaded without onboarding being reset. The new food/meal/metric/goal/reminder/plan/fast tables are present (Dexie schema v2 is represented internally as IndexedDB version 20).
+- Frontend TypeScript/Vite production build passed.
+- Backend TypeScript check passed.
+- 32 unit tests passed: prior movement/wellness/migration/backup tests plus anonymous-session expiry/throttling/budgets, audio bounds/resampling and quick-command negation/quantity boundaries.
+- 5 Chrome integration tests passed; access-code field absence is asserted in Settings.
+- Render Blueprint API validation returned HTTP 200, valid true. Current service is API-managed; standalone Blueprint is not being synced over the custom private-source bootstrap.
+- Android `assembleDebug` passed and APK update installation succeeded.
+- Public Render health reports version 0.4.0, NVIDIA voice/text, anonymousSessions true and videoUpload false.
+- Local and public Render synthetic speech protocol tests passed: automatic session → Magpie-generated test audio → Parakeet → Progress tool → synthetic client acknowledgement → Magpie spoken receipt.
+- Real deployed Chrome fake-microphone test passed: actual AudioWorklet capture/resampling, WebSocket audio, Parakeet transcription, actual Progress navigation and 299,008 audio bytes delivered to browser. No real microphone recording or access code was used.
+- Actual Oppo Settings shows zero application-access-code inputs and the NVIDIA voice heading. A text request navigated to Progress with an automatic public session. Phone was returned to Today.
 
-Physical-device checks passed for the light theme, Nutrition and Health navigation, public Render health (HTTP 200 / version 0.3.0), native notification plugin availability and granted display permission. A temporary inexact reminder was accepted, observed in pending schedules, and cancelled immediately; no test reminder or synthetic health record was left behind. The phone was returned to Today. Actual later notification delivery under battery restrictions remains unverified.
+## Retained functionality and data
 
-The APK's public backend is already https://chinnu-ai.onrender.com. No local Mac backend or USB forwarding is needed for cloud requests after updating. A new browser/device needs the application's access code entered privately in Settings, not the Gemini key.
+The v0.3 light UI, CHINNU-AI launch animation, local camera/video pose pipeline, illustrated exercise guides, nutrition diary, recipes, manual health logs, plans, reminders, progress, journal, PDF and backup flows remain. Database v2 is unchanged; no migration/reset was needed for v0.4. Earlier native Android speech and notification scheduling/cancellation checks passed; no test health record/reminder was left in the user's phone.
 
-## Service and capability limits
+## Operational limits
 
-- This is an expanded alpha, not complete HealthifyMe service parity. Exact source feature mapping is in `HEALTHIFY-FEATURE-PARITY.md`.
-- No HealthifyMe source, graphics, food database, user identity or service credentials were copied.
-- Human coaching, payments, social accounts/chat, real wearable/CGM sync, NFC/widgets and background Auto Snap are not connected. Their requirements/status are shown in More → Integrations.
-- Food estimates are rounded/unverified; allergies, hidden ingredients and portions cannot be established from a photograph. Generic entries lack most micronutrients. Missing values are not treated as zero.
-- Exercise alignment thresholds remain expert-validation-pending. Real-person accuracy, reliable camera-view recognition and sustained 15+ FPS on Oppo remain unverified.
-- Native camera/microphone capture, worker inference, SQLite migration, true calibration/progression, live form-breakdown rest detection and native iOS remain future work. Android TTS and local notifications are native plugins.
-- Native reminder scheduling/cancellation and v0.3 phone navigation are verified. Later notification delivery under battery restrictions, native PDF download/share and sustained live-camera performance still need testing.
-- Profiles/history stay in device IndexedDB; web/APK storage is separate. Food-photo/voice/request data reach the provider only through their relevant user actions/consent. Chinnu does not persist selected media on the backend; provider terms still apply.
-- Render paid service creation was rejected for missing billing details; free compute is deployed and can cold-start. The client allows a bounded 65-second connection warm-up.
-- Render builds private source with a repo-scoped read-only SSH deploy key, not a general GitHub token. Autodeploy is off; explicit deployments are used.
-- Gemini Live native-audio model remains `gemini-2.5-flash-native-audio-preview-12-2025`; text/image model is `gemini-3.8-flash`, tested for this account.
-- Three moderate development-tool advisories remain in the Capacitor CLI/xcode/uuid chain; no runtime-critical advisory was left from the initial dependency installation.
+- NVIDIA Build keys are testing credentials with quotas and expiration, not unlimited free production inference. Provider and Render usage are separate.
+- Speech is English, short-utterance/turn-based. It is not word-by-word streaming ASR or simultaneous full-duplex Gemini Live. Microphone transmission pauses during processing/playback; Interrupt stops speech and resumes listening.
+- Coarse energy endpointing, real microphone quality, noisy-gym accuracy, echo and speaker loudness need hands-on testing. Automated speech tests used synthetic audio, not the user's voice.
+- In-memory controls: 12 session attempts/IP/minute, 100 app sessions, 60 HTTP actions/session, two voice sessions, ten-minute voice lifetime, 40 turns/session and a default 300 provider-call/day/process budget. Counters reset on restart; persistent production abuse accounting remains future work.
+- Render free compute can cold-start. Paid compute is still blocked by missing workspace billing details.
+- Local camera, manual logs and Android spoken cues remain available if cloud voice disconnects or quota is exhausted.
+- Exercise thresholds are unvalidated prototypes. Native camera/microphone optimization, calibration/progression, expert validation and real wearable/CGM/human-coach/payment/social integrations remain unfinished. See `HEALTHIFY-FEATURE-PARITY.md`.
+- Three moderate dev-tool advisories remain in Capacitor CLI's xcode/uuid chain; runtime-critical findings from initial setup were resolved.
 
-See `README.md`, `AGENT-COMMANDS.md`, `HEALTHIFY-FEATURE-PARITY.md` and `RENDER-MODELS.md` for operation, commands, research provenance and remaining work.
+See `NVIDIA-VOICE.md` and `README.md` for actual configuration, privacy behavior and verification commands.

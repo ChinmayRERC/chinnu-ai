@@ -54,8 +54,11 @@ node --env-file=.env --import tsx scripts/verify-nvidia.ts
 node --env-file=.env --import tsx scripts/verify-voice-flow.ts
 # After deploy:
 node --env-file=.env --import tsx scripts/verify-voice-flow.ts https://chinnu-ai.onrender.com
+node --env-file=.env --import tsx scripts/verify-browser-voice.ts
 ```
 
 These tests use generated synthetic test speech, never an unconsented microphone recording. End-to-end local verification passed: Magpie generated “Open my progress”, Parakeet transcribed it, the server requested a Progress action, the test client acknowledged it, and Magpie returned a spoken receipt.
+
+The same protocol test passed against the public Render service. A separate real Chrome browser test used a generated WAV as a fake microphone: the actual AudioWorklet path sent speech, Parakeet transcribed it, the app navigated to Progress, and audio was delivered to browser playback. No credential/access code was entered into that test client. The Oppo v0.4 Settings screen and text navigation were also checked without an access-code input. These tests do not establish recognition quality for the user's real microphone, accent or noisy gym.
 
 Source protocol notices are in `server/protos/`. HTTP/model interfaces and hosted function IDs can change; retest rather than assuming a catalog listing proves speech access.

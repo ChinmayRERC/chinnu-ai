@@ -1,5 +1,9 @@
 # Render deployment and model choices
 
+## v0.4 active provider update
+
+The deployed primary provider is now NVIDIA for speech, text and selected-photo vision. App users no longer enter an application access code or provider key. Automatic short-lived sessions are enabled with server rate/concurrency/daily-budget limits. See `NVIDIA-VOICE.md` for verified function IDs, models, turn-based speech behavior and actual tests. Older Gemini recommendations below describe the earlier architecture/research, not the current selected configuration.
+
 ## Current deployment
 
 Render service `srv-dbacm1vbtjjs73eldevg` is deployed at https://chinnu-ai.onrender.com. It hosts the web frontend and HTTP/WebSocket backend. The private source is https://github.com/ChinmayRERC/chinnu-ai. A repository-scoped read-only deploy key supports private-source builds because the workspace's GitHub integration did not grant direct access.

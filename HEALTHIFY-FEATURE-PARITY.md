@@ -1,5 +1,7 @@
 # HealthifyMe research → original Chinnu AI v0.3 features
 
+Provider update: v0.4 retains these wellness features but uses NVIDIA speech/text/vision through automatic app sessions. Earlier Gemini references below record the v0.3 implementation. No API key or access code is requested from users. See `NVIDIA-VOICE.md`.
+
 ## Evidence boundary
 
 Target: `/Users/chinmaya/Downloads/naturalgym/Healthifyme_v31.5_1791393326_latestmodapks.com.xapk`
