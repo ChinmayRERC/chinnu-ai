@@ -1,6 +1,6 @@
 # Chinnu AI app-agent commands
 
-Chinnu uses natural-language tool calling, not exact keyword matching. These examples describe the supported in-app action scope, similar to familiar assistant commands. This Android application does not integrate Apple's Siri or control unrelated apps.
+Chinnu combines a fast explicit-command router with NVIDIA Nemotron tool calling for general requests. NVIDIA Parakeet transcribes short English utterances, and Magpie speaks replies. App users need no key/access code. These examples describe the supported in-app scope; this is not Apple's Siri or phone-wide automation. See `NVIDIA-VOICE.md` for the tested service configuration.
 
 ## Navigation and instructions
 
@@ -53,7 +53,7 @@ Food logging requires an exact catalog ID, meal and gram amount. Ask for quantit
 
 ## Tool execution protocol
 
-`src/agent/actions.ts` is the local validation boundary. Gemini emits an `app_action` or `control_session` tool request. The backend validates and forwards it; the device executes an allowed action and returns an actual result. Only then does the voice model receive the tool response. Unsupported, failed, timed-out or cancelled actions are returned as such.
+`src/agent/actions.ts` is the local validation boundary and generates the model tool schema. A fast explicit command or Nemotron emits an app action. The backend forwards it; the device validates/executes it and returns an actual result. Magpie speaks that receipt only after completion; the result is retained as bounded in-memory conversation context. Unsupported, failed, timed-out or cancelled actions are not described as successful.
 
 The text-agent endpoint returns schema-validated proposed actions; the client executes them locally and displays actual outcome messages. An action audit in the agent panel shows what actually happened.
 

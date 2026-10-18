@@ -1,166 +1,130 @@
-# Chinnu AI
+# CHINNU-AI · v0.4
 
-Android-first, local-camera movement companion with optional Gemini conversational voice through a Render-ready Node backend.
+Android-first, local-camera training and personal wellness with an NVIDIA-backed voice agent.
 
-Live web app/backend: **https://chinnu-ai.onrender.com**. Private source: https://github.com/ChinmayRERC/chinnu-ai. The deployed free service can have cold starts; an always-on paid service requires enabling Render billing. See `AGENT-COMMANDS.md` for the deployment's private-source build route.
+**Live app:** https://chinnu-ai.onrender.com · **Private source:** https://github.com/ChinmayRERC/chinnu-ai
 
-## v0.3 wellness and light design
+## For app users
 
-- Original polished light theme, native light splash and animated **CHINNU-AI** launch, including reduced-motion handling.
-- Nutrition: 26 rounded generic starter foods, custom labels, favorites/search, gram portions, editable meal diary, macros/fiber and optional known-data micronutrient totals. Six original recipes support ingredient review and atomic diary logging.
-- Optional food-photo estimate through Gemini only after separate photo consent; every result requires review. Manual Open Food Facts barcode lookup is available when a complete label exists. Exercise videos remain local.
-- Health: manual water, weight, sleep, additional steps, waist, activity duration and glucose notes, history and user-chosen goals. No sensor, medical score, inferred calories burned or diagnosis is fabricated.
-- Plans: editable meal/workout/yoga routines, pause/resume, conservative restrictions and personal completion dates.
-- Reminders: in-app banners and opt-in Android daily inexact notifications through Capacitor. Refresh notification schedules after changes.
-- More: seven-day reports, private real-data challenges, profile editor, validated JSON backup/restore, FAQ, non-content diagnostics and honest integration status.
-- Agent actions cover food/water/metric logging, food search, daily summary, reminders and a neutral eating-break timer as well as navigation and movement tools.
-- Existing v1 history migrates to database v2. Delete/export/backup cover the new tables. No application/provider access keys are backed up.
+Open the app, complete local onboarding and tap **Ask Chinnu**. Type a request or consent to cloud microphone processing and tap **Talk to Chinnu**. **There is no API-key or application-access-code setup for users.** The operator configures one NVIDIA credential on Render; short-lived app sessions are created automatically.
 
-See `HEALTHIFY-FEATURE-PARITY.md` for the REA evidence, implemented counterparts and remaining service/integration gaps. This is an original implementation, not copied HealthifyMe source, graphics or food data.
+NVIDIA speech is currently English: Parakeet recognizes short utterances after a pause; Nemotron handles complex requests; Magpie speaks calm replies. Explicit commands such as “Open my progress”, “Pause”, “Show me how to do a squat” and a specified water amount use a fast validated command path without an unnecessary LLM hop. App results are acknowledged before the assistant confirms them.
 
-## v0.2 agent and visual instruction update
+Microphone transmission pauses while Chinnu processes/speaks to reduce echo. Tap **Interrupt · listen** to stop a reply and speak again. This is a short-utterance voice pipeline, not native simultaneous streaming audio or always-listening background Siri integration. Camera permissions, file selection and destructive/export confirmations remain on device.
 
-The floating **Ask Chinnu** agent accepts text requests and opt-in live microphone conversation across app pages. It can navigate, open exercises, show original step illustrations/animated guides, control training, mute/unmute coaching, run the gentle breathing timer, save explicitly supplied check-ins, read real progress, suggest a local plan, show reports and request PDF export/data deletion. Tool results come from the app before the voice model may claim success. Camera/file-picker gestures and destructive/export confirmations remain on device. This is an in-app agent, not Siri or an OS-wide assistant.
+## Features
 
-Each configured exercise has three instructions, a camera-placement note, cautions and an original schematic guide. The animated guide is an illustration, not filmed footage, motion capture, a diagnosis or a validated scoring reference. It can remain visible while live tracking is active.
+- Original responsive light interface, animated CHINNU-AI launch, native light splash and system bars.
+- Six gym and eight yoga reference configurations plus seated breathing posture; original step illustrations and schematic animated guides.
+- Local MediaPipe skeleton tracking, aspect-correct joint angles, One Euro smoothing, confidence gating, phase-based reps, tracked hold timers, prioritized correction cues and session reports.
+- Local selected-video analysis (browser-supported codecs; two minutes/150 MB), per-rep estimates, flags and temporary annotated snapshots. No exercise-video upload.
+- Native Android spoken cues work without cloud service. Alignment estimates are prototypes needing expert validation, not safety or medical scores.
+- Nutrition diary with 26 rounded generic starter foods, custom labels, favorites, portions, macros/fiber and known-data micronutrient coverage. Six original recipes support ingredient review and atomic logging.
+- Optional selected food-photo estimate through NVIDIA vision, with separate consent and review before saving. Manual Open Food Facts barcode-digit lookup.
+- Manual water, weight, sleep episodes, additional steps, waist, activity duration and glucose notes; optional user-chosen goals.
+- User-built meal/workout/yoga plans, pause/resume and private completion dates; no automatic prescribed calorie deficits.
+- In-app reminders and opt-in daily inexact Android notifications.
+- Progress, real-data weekly reports, private challenges, check-ins, journal, PDF timeline, validated JSON backup/restore, complete local deletion and non-content diagnostics.
+- In-app agent navigation, visual guides, session controls/status, wellness logging, reminders and requested progress summaries. See `AGENT-COMMANDS.md`.
 
-Web frontend and HTTP/WebSocket backend can run on the same Render service using `npm ci --include=dev && npm run build` and `npm run server`. The web client defaults to its HTTPS origin. APKs use public `VITE_API_URL` or an explicitly saved backend URL; provider credentials never use a VITE-prefixed variable.
+## Architecture
 
-Voice/text request and requested app-result data go to the AI provider. Camera frames remain local. Review `src/agent/actions.ts` for the exact supported action boundary; unsupported actions fail rather than executing arbitrary code.
+```text
+Phone camera / selected workout video
+  -> local MediaPipe -> confidence gate / smoothing / geometry
+  -> phase + rule engine -> local measured cue / report / IndexedDB
 
-## Run
+Opt-in microphone -> AudioWorklet PCM -> Render WebSocket
+  -> short-utterance endpointing -> NVIDIA Parakeet ASR
+  -> fast explicit-command router or NVIDIA Nemotron tool calling
+  -> validated action executed on device -> actual action result
+  -> NVIDIA Magpie TTS -> browser audio playback
+
+Text requests -> Render HTTP agent -> same action boundary
+Selected, separately consented food photo -> NVIDIA vision -> reviewed estimate
+```
+
+Render hosts the web app, model/WASM assets and gateway. NVIDIA performs hosted speech/text/vision inference. No large model or GPU inference runs on the small Render instance. NVIDIA testing quotas/expiry and Render hosting usage are separate; neither is unlimited production service.
+
+## Development
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173`. Camera/microphone require localhost or HTTPS; plain LAN HTTP is not a secure camera context. The APK bundles model/WASM assets for local inference.
+Open localhost for camera use, or HTTPS for phone/browser testing. Plain LAN HTTP is not a secure camera context. Bundled model/WASM assets support local APK pose inference.
+
+Operator backend setup:
+
+```sh
+cp .env.example .env
+# Privately configure NVIDIA_API_KEY once. Never paste it into the app.
+node --env-file=.env --import tsx server/index.ts
+```
+
+The deployed configuration uses:
+
+- Text: `nvidia/nemotron-3.5-lightning-30b-a3b`, thinking disabled for conversational latency.
+- Speech recognition: hosted Parakeet TDT English offline recognizer.
+- Speech output: `Magpie-Multilingual.EN-US.Aria.Calm`, PCM 22,050 Hz.
+- Selected-photo vision: `nvidia/nemotron-3.5-super-vl-120b-a12b`.
+- `PUBLIC_APP_SESSIONS=true`, one anonymous app session per client cache, per-IP session throttles, 60 HTTP actions per session, two concurrent cloud voice sessions, ten-minute voice lifetime, 40 turns per voice session and a default 300 provider-call/day process budget.
+
+Budgets are in-memory and reset with an instance restart. Production abuse protection needs persistent/distributed accounting and provider-side quota controls. Legacy Gemini text/image support remains an explicit operator-only alternative; it is not the selected deployed provider. There is no Gemini live-voice route in v0.4.
 
 ## Android
-
-Built APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
-
-An easy-to-find copy is delivered at `../chinnu-ai-debug.apk`. This is a debug-signed testing build, not a Play Store production release.
-
-Build prerequisites: Node 24+, Android SDK 36/build tools, compatible Java 21, and accepted Android SDK licenses.
 
 ```sh
 JAVA_HOME=/path/to/jdk21 npm run android:apk
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-The build script uses `JAVA_HOME` if set, otherwise attempts Android Studio's bundled JDK. Java 25 is incompatible with the bundled Gradle 8.14.3; choose Java 21 explicitly. Build commands may download Gradle and missing Android components. The APK has now been installed and launched on an Oppo A5 2020 / Android 11. Actual movement accuracy and sustained performance still need testing.
+Easy-to-find copy: `../chinnu-ai-debug.apk`. It is debug-signed, not a Play Store production release. Requires compatible Java 21, Android SDK 36/build tools and accepted SDK licenses. Android Studio's bundled Java 25 is incompatible with the current Gradle wrapper; set `JAVA_HOME` explicitly. The build may download missing Gradle/Android dependencies.
 
-## Implemented
+Camera/microphone currently use WebView APIs; native Android TTS and local notifications are Capacitor plugins. History uses IndexedDB, with v1→v2 migration. Android backup is disabled. Native SQLite, CameraX/inference worker and native audio capture are future adapters, not implemented claims.
 
-- Responsive dark interface: Today, Train, Progress, Journal, Settings.
-- Consent, local profile, conservative screening and restricted movement selection.
-- Local MediaPipe Pose Landmarker with confidence gating and skeleton overlay.
-- Shared angle/phase/rule pipeline for live camera and local video.
-- Declarative configurations: six gym movements, eight yoga poses, seated breathing.
-- One Euro feature smoothing; complete-cycle reps; hold timer; sustained correction cues.
-- Measured correction explanations, estimated scores, tracking coverage, per-rep reports, form-breakdown summary.
-- Temporary flagged snapshots (not persisted), local session history, clearly labeled demo history.
-- Local check-ins, journal, PDF export and deletion.
-- Gentle 4-in/6-out breathing timer (no breath sensing or retention).
-- Rules-based daily suggestion based on goal, restrictions, latest soreness check-in.
-- Automatic prioritized spoken corrections using native Android TextToSpeech (browser speech fallback) and opt-in Gemini conversation.
-- Sustained-correction repetition, tracking-loss instructions and spaced encouragement with cooldowns; proactive Gemini audio from measured coaching events.
-- Backend diagnostics explain USB localhost dependency and provide connection/speaker tests in Settings. See `RENDER-MODELS.md` for permanent deployment and open-model options.
-- Render backend with Gemini Live relay, temporary access tokens, per-session bounds, and pause/resume/stop/pain tools.
-- AI explanation/summary/plan endpoints. These are backend capabilities; the current UI does not invoke the text endpoints or apply cloud-generated plans.
+## Render
 
-## Render and Gemini voice
+Current service: `srv-dbacm1vbtjjs73eldevg`, https://chinnu-ai.onrender.com, Singapore. It uses the free plan because the account rejected paid-instance creation without payment details; cold starts may delay the first connection by about a minute. The client permits a bounded 65-second warm-up.
 
-1. Put this source in a Git repository you control. No commit or push was performed automatically.
-2. In Render, create a Blueprint using `render.yaml` (small paid service). Review the plan's charges before deploying.
-3. Set `GEMINI_API_KEY` in Render environment secrets. Render credits and Gemini API billing are separate.
-4. Set or retrieve `APP_ACCESS_CODE`. This is a temporary demo gate, not production user authentication.
-5. Verify your account supports `GEMINI_LIVE_MODEL`. Defaults are configurable and not a guarantee of provider availability.
-6. Check `/health`. `voiceConfigured` must be true.
-7. In the app's Settings, enter the HTTPS Render URL and application access code. Never enter the Gemini API key in the app.
-8. Start a training session, tap Connect, review cloud-processing consent, and enable the microphone.
+Source is built from the owner's authorized private repo using a repository-scoped read-only deploy key. See `AGENT-COMMANDS.md`. Autodeploy is disabled; deployment is explicit. `scripts/configure-nvidia-render.mjs` updates individual NVIDIA settings without replacing unrelated env variables; values are not logged. `scripts/render-deploy.mjs deploy` triggers a build. The Blueprint describes a normal directly connected Git deployment; it is not the active source of truth for the API-created service's bootstrap/private-fetch build command.
 
-Voice audio and current measurement context reach Render and Gemini only when the user enables cloud voice. Video never enters the backend. Provider terms govern audio processing/retention. Application content is not intentionally logged, but platform/provider retention is separate.
-
-For local backend development:
-
-```sh
-cp .env.example .env
-# Edit .env privately with your credentials.
-node --env-file=.env --import tsx server/index.ts
-```
-
-Use `http://localhost:10000` only on the same desktop browser, or expose a trusted HTTPS development endpoint for phone testing. No secrets are bundled in the frontend.
-
-## Architecture
-
-```text
-Camera / selected video
-  -> PoseEstimator (MediaPipe Web in this release)
-  -> confidence gate -> One Euro smoothing
-  -> aspect-correct angles -> phase state machine -> rules
-  -> rep/hold records -> cue -> report -> local IndexedDB
-
-Opt-in microphone -> AudioWorklet PCM -> authenticated Render WebSocket
-  -> Gemini Live -> audio/captions + constrained session commands
-```
-
-`src/pose`, `src/exercises`, `src/feedback`, `src/ui`, `src/storage`, `server`, and `tests` own their respective boundaries. Adding a movement using the existing feature primitives requires JSON, not engine changes.
+Public HTML is served no-store so a refresh obtains the current client. APK updates still require installing the new APK.
 
 ## Verification
 
 ```sh
-npm run build
 npm test
+npm run build
 npx playwright test
 npx tsc --noEmit --strict --skipLibCheck --esModuleInterop --target ES2022 --module ESNext --moduleResolution Bundler server/index.ts
+# Operator credentials required; only generated synthetic speech is used:
+node --env-file=.env --import tsx scripts/verify-nvidia.ts
+node --env-file=.env --import tsx scripts/verify-voice-flow.ts
 ```
 
-Browser tests use installed Google Chrome. Unit fixtures exercise numeric geometry, counting, confidence loss, time gaps and breakdown detection; they do not establish real-video accuracy.
+`BUILD-STATUS.md` records actually executed tests and deployment/device state. Synthetic TTS→ASR tests do not establish real-microphone recognition accuracy. Main speech services, actual tool round trips and provider entitlements must be retested after credential/model changes.
 
-## Important limitations / remaining full-product work
+## Privacy and limitations
 
-- This is a working alpha, not the complete validated product from the long-term plan.
-- Native CameraX/MediaPipe, native microphone capture, SQLite and native PDF sharing are not implemented. Native Android speech output is implemented; camera/microphone still use browser APIs and IndexedDB in Capacitor. PDF download behavior needs phone testing.
-- MediaPipe inference currently runs on the main thread. 15+ FPS on Oppo A5 2020 has not been demonstrated. Worker/native migration and sustained benchmarks remain.
-- Camera-view verification is manual. Full-body checks and brightness checks are heuristics, not guarantees.
-- All exercise thresholds need qualified expert validation. Some yoga rules assess only a small subset of the pose. Child's pose is a rest timer with no alignment score.
-- No load, force, spinal curvature, breathing, injury, or diagnosis detection. Hip hinge is unloaded practice only.
-- Calibration/body-proportion adaptation, side-specific rep inventories, robust progression and automatic rest-day planning are not yet implemented. Height/experience are stored but do not change thresholds.
-- Form breakdown is shown after the session. Automatic live sharp-degradation rest prompts are not implemented; Pain / Stop is always visible.
-- Voice requires network, credentials and a supported provider model. Gemini Live setup and generated audio delivery through the backend to the phone WebView are verified; microphone/speaker interaction is not yet tested. Voice reconnection is manual, not automatic; speech interruption relies on provider events.
-- Voice tools pause/resume/stop/pain only; voice-based exercise switching is not implemented. Local stop remains available when speech recognition fails.
-- Uploaded clips play and analyze in real time; support is limited to browser-decodable clips up to two minutes/150 MB. Frame-rate consistency is not guaranteed on slow devices.
-- Hold timers do not prove full pose recognition. Scores are rule-based estimates, not safety or clinical metrics.
-- History stores measurements locally; snapshots are discarded on leaving the trainer. OS/browser storage retention applies. Android app backup is disabled.
-- Sleep/food tips include a public basis. Android local reminders now work; native iOS packaging and offline PWA service-worker caching remain future work.
-- Cloud plan endpoint is an educational text proposal only and is not applied by the app; no unvalidated AI plan silently changes training.
-- Coach handoff is a local export stub, marked Coming soon. No accounts, bookings, payments or wearables are connected. The food catalog is a small rounded starter plus custom/imported labels, not a comprehensive licensed diet database.
+- Camera/workout video never leaves the device. Frame snapshots are temporary; measurements persist locally. No recording is enabled without its user action/consent.
+- Microphone audio, text requests, requested app results and explicitly selected food photos reach NVIDIA through Render. Chinnu does not intentionally log/store their content. Provider/platform terms and retention are separate.
+- Browser and APK histories are separate; no account/cloud history sync. Backups exclude provider credentials and media. Exported files are user controlled.
+- Voice is English and turn-based. Coarse energy endpointing can mis-trigger in noisy environments. Microphone pauses during replies, with explicit interrupt rather than guaranteed hands-free barge-in. Stop/Pain buttons always remain local.
+- Provider latency, rate limits, free-service cold starts and trial expiry affect cloud availability. Local training/manual diaries/native spoken cues remain available.
+- Some yoga checks measure only a small subset of alignment. Child's pose is a rest timer, not alignment scoring. No breath, load, force, spinal curvature, injury or diagnosis detection. Hip hinge is unloaded practice.
+- Threshold validation, calibration/body-proportion adaptation, robust progression, automatic live-degradation rest prompts, iOS native, widgets and wearable/CGM integrations remain unfinished.
+- Food values are estimates, not a medical diet. Review actual labels/allergens. No micronutrient value is invented when missing. Photo estimates cannot establish portions/hidden ingredients/allergens and never auto-log.
+- Human coaches, payments, social accounts and real connected health sensors are not supplied by an APK's feature inventory. `HEALTHIFY-FEATURE-PARITY.md` labels current implementation and real integration gaps.
 
-## Native migration
+## References / notices
 
-Replace `PoseEstimator` with adapters that normalize coordinates, timestamps, confidence, orientation and landmark identity. Android: CameraX + MediaPipe Tasks/LiteRT. iOS: Vision/Core ML with an explicit landmark mapping. Apple Vision does not provide an identical 33-landmark schema: unavailable features must remain unknown, not fabricated. Keep the downstream phase/rule engine and fixtures shared. Add local repository adapters for SQLite without changing UI data semantics.
+Original implementation; no HealthifyMe source, media, branding, credentials or food database is copied. REA findings are product research with evidence/limitations in `HEALTHIFY-FEATURE-PARITY.md`.
 
-## Three-minute demo
-
-0:00–0:25: onboarding, screening and privacy.
-0:25–1:15: squat frame check, reps, measured cue, pause/stop.
-1:15–1:55: short local video, temporary snapshot, per-rep report.
-1:55–2:25: Mountain hold and confidence loss behavior.
-2:25–3:00: progress, labeled demo history, journal and PDF.
-
-Cloud voice is an optional additional demonstration only after actual provider setup is verified.
-
-## References and notices
-
-- MediaPipe samples: https://github.com/google-ai-edge/mediapipe-samples (Apache-2.0).
-- MediaPipe Tasks Vision npm package and bundled WASM: preserve upstream notices.
-- Pose model: https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task
+- NVIDIA Build Magpie: https://build.nvidia.com/nvidia/magpie-tts-multilingual
+- NVIDIA Build Parakeet: https://build.nvidia.com/nvidia/parakeet-tdt-0_6b-v2
+- Protocol definitions and notices: `server/protos/`, NVIDIA Riva common (MIT plus preserved Apache attribution).
+- MediaPipe sample/model notices: `public/mediapipe-LICENSE.txt`, https://github.com/google-ai-edge/mediapipe-samples
 - Capacitor: https://github.com/ionic-team/capacitor (MIT).
-- Render WebSockets: https://render.com/docs/websocket
-- Pose Trainer was research context only; no GPL project code was copied.
-- No HealthifyMe code, assets, credentials or branding are used.
-
-Review dependency/model licenses before public distribution. The original HealthifyMe reverse-engineering report is separate product research, not source for copied code.
+- Open Food Facts labels are third-party crowdsourced data; verify package values and applicable reuse terms before broader distribution.

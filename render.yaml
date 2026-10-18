@@ -2,18 +2,24 @@ services:
   - type: web
     name: chinnu-ai-api
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm ci --include=dev && npm run build
     startCommand: npm run server
     healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: 24.18.0
-      - key: GEMINI_API_KEY
+      - key: NVIDIA_API_KEY
         sync: false
-      - key: APP_ACCESS_CODE
-        generateValue: true
-      - key: GEMINI_LIVE_MODEL
-        value: gemini-2.5-flash-native-audio-preview-12-2025
-      - key: GEMINI_TEXT_MODEL
-        value: gemini-3.8-flash
+      - key: PUBLIC_APP_SESSIONS
+        value: "true"
+      - key: TEXT_PROVIDER
+        value: nvidia
+      - key: AI_DAILY_REQUEST_LIMIT
+        value: "300"
+      - key: NVIDIA_TEXT_MODEL
+        value: nvidia/nemotron-3.5-lightning-30b-a3b
+      - key: NVIDIA_VISION_MODEL
+        value: nvidia/nemotron-3.5-super-vl-120b-a12b
+      - key: NVIDIA_VOICE
+        value: Magpie-Multilingual.EN-US.Aria.Calm

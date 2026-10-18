@@ -44,7 +44,9 @@ Verified 2026-10-18.
 
 ## Phone installation status
 
-The Oppo A5 2020 was disconnected from ADB during the final v0.3 build. v0.3 is built and available at the APK path but **not installed on the phone yet**. Previously installed v0.2 remains until the owner reconnects USB or sideloads this APK. Install as an update (`adb install -r`) to retain local data; migration is tested.
+After the phone reconnected, v0.3 was installed with `adb install -r` on Oppo CPH1933 / A5 2020, Android 11. Package manager confirms versionCode 4 and versionName 0.3.0. The existing profile loaded without onboarding being reset. The new food/meal/metric/goal/reminder/plan/fast tables are present (Dexie schema v2 is represented internally as IndexedDB version 20).
+
+Physical-device checks passed for the light theme, Nutrition and Health navigation, public Render health (HTTP 200 / version 0.3.0), native notification plugin availability and granted display permission. A temporary inexact reminder was accepted, observed in pending schedules, and cancelled immediately; no test reminder or synthetic health record was left behind. The phone was returned to Today. Actual later notification delivery under battery restrictions remains unverified.
 
 The APK's public backend is already https://chinnu-ai.onrender.com. No local Mac backend or USB forwarding is needed for cloud requests after updating. A new browser/device needs the application's access code entered privately in Settings, not the Gemini key.
 
@@ -56,7 +58,7 @@ The APK's public backend is already https://chinnu-ai.onrender.com. No local Mac
 - Food estimates are rounded/unverified; allergies, hidden ingredients and portions cannot be established from a photograph. Generic entries lack most micronutrients. Missing values are not treated as zero.
 - Exercise alignment thresholds remain expert-validation-pending. Real-person accuracy, reliable camera-view recognition and sustained 15+ FPS on Oppo remain unverified.
 - Native camera/microphone capture, worker inference, SQLite migration, true calibration/progression, live form-breakdown rest detection and native iOS remain future work. Android TTS and local notifications are native plugins.
-- Android reminder delivery, native PDF download/share and actual v0.3 phone layout need physical-device testing after installation.
+- Native reminder scheduling/cancellation and v0.3 phone navigation are verified. Later notification delivery under battery restrictions, native PDF download/share and sustained live-camera performance still need testing.
 - Profiles/history stay in device IndexedDB; web/APK storage is separate. Food-photo/voice/request data reach the provider only through their relevant user actions/consent. Chinnu does not persist selected media on the backend; provider terms still apply.
 - Render paid service creation was rejected for missing billing details; free compute is deployed and can cold-start. The client allows a bounded 65-second connection warm-up.
 - Render builds private source with a repo-scoped read-only SSH deploy key, not a general GitHub token. Autodeploy is off; explicit deployments are used.
