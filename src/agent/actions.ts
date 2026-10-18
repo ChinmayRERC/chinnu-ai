@@ -1,5 +1,5 @@
 import {z} from 'zod';
-export const agentActions=['navigate','open_exercise','show_guide','control_session','set_coaching','start_breathing','stop_breathing','log_checkin','get_progress','get_plan','show_latest_report','export_timeline','open_video_picker','open_camera','delete_data'] as const;
+export const agentActions=['navigate','open_exercise','show_guide','control_session','get_session_status','set_coaching','start_breathing','stop_breathing','log_checkin','get_progress','get_plan','show_latest_report','export_timeline','open_video_picker','open_camera','delete_data'] as const;
 export const actionSchema=z.object({
  action:z.enum(agentActions),
  page:z.enum(['Today','Train','Progress','Journal','Settings']).optional(),

@@ -24,6 +24,7 @@ Guides include original schematic step images, animated playback, written instru
 - “Stop, that hurts.”
 - “Mute spoken coaching.”
 - “Turn spoken coaching on.”
+- “How many reps have I done?” / “Explain my current measured form.”
 
 Open an exercise before requesting camera/video input. Finish the current session before switching exercises or leaving the trainer; the agent will not silently discard a recording. Raw camera frames and selected videos remain local.
 

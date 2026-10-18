@@ -20,7 +20,7 @@ const appActionTool={name:'app_action',description:'Execute one supported action
 const appStateSchema=z.object({page:z.string().max(30),exerciseId:z.string().max(30).nullable(),availableExercises:z.array(z.object({id:z.string().max(30),name:z.string().max(50)})).max(20),conservativeMode:z.boolean()});
 function limited(ip:string){const now=Date.now();let entry=attempts.get(ip);if(!entry||entry.expires<now){entry={count:0,expires:now+60000};attempts.set(ip,entry);}return ++entry.count>10;}
 const authorize=(header:string|undefined)=>{const token=header?.replace(/^Bearer /,'');const s=token?sessions.get(token):null;if(!s||s.expires<Date.now()||++s.requests>60)return null;return s;};
-app.get('/health',(_req,res)=>res.json({status:'ok',voiceConfigured:!!key&&!!access,historyStorage:'device-only',videoUpload:false}));
+app.get('/health',(_req,res)=>res.json({status:'ok',version:'0.2.0',agentActions:[...agentActions],voiceConfigured:!!key&&!!access,historyStorage:'device-only',videoUpload:false}));
 app.post('/sessions',(req,res)=>{if(limited(req.ip??'unknown')){res.status(429).json({error:'Too many attempts. Retry in a minute.'});return;}if(!ai||!access){res.status(503).json({error:'Configure GEMINI_API_KEY and APP_ACCESS_CODE on Render first.'});return;}
  const parsed=z.object({accessCode:z.string().min(1).max(256)}).safeParse(req.body);const supplied=Buffer.from(parsed.success?parsed.data.accessCode:'');const expected=Buffer.from(access);
  if(supplied.length!==expected.length||!timingSafeEqual(supplied,expected)){res.status(401).json({error:'Invalid application access code.'});return;}

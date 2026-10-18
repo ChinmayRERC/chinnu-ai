@@ -2,6 +2,8 @@
 
 Android-first, local-camera movement companion with optional Gemini conversational voice through a Render-ready Node backend.
 
+Live web app/backend: **https://chinnu-ai.onrender.com**. Private source: https://github.com/ChinmayRERC/chinnu-ai. The deployed free service can have cold starts; an always-on paid service requires enabling Render billing. See `AGENT-COMMANDS.md` for the deployment's private-source build route.
+
 ## v0.2 agent and visual instruction update
 
 The floating **Ask Chinnu** agent accepts text requests and opt-in live microphone conversation across app pages. It can navigate, open exercises, show original step illustrations/animated guides, control training, mute/unmute coaching, run the gentle breathing timer, save explicitly supplied check-ins, read real progress, suggest a local plan, show reports and request PDF export/data deletion. Tool results come from the app before the voice model may claim success. Camera/file-picker gestures and destructive/export confirmations remain on device. This is an in-app agent, not Siri or an OS-wide assistant.

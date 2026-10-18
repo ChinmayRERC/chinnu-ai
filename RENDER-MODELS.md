@@ -1,16 +1,16 @@
 # Render deployment and model choices
 
-## Current blocker
+## Current deployment
 
-No Render API credential, Render CLI login, or Render connector is available to this coding session. Linking Render in another ChatGPT interface does not automatically make that integration available here. No Render service has been deployed, and no Render credits have been spent.
+Render service `srv-dbacm1vbtjjs73eldevg` is deployed at https://chinnu-ai.onrender.com. It hosts the web frontend and HTTP/WebSocket backend. The private source is https://github.com/ChinmayRERC/chinnu-ai. A repository-scoped read-only deploy key supports private-source builds because the workspace's GitHub integration did not grant direct access.
 
-The installed phone currently uses `http://localhost:10000`, routed to the Mac by `adb reverse tcp:10000 tcp:10000`. Disconnecting the USB connection makes this URL unreachable. It is a development address, not an internet deployment.
+The phone backend is now configured to the Render HTTPS URL. USB localhost remains an optional development route only. Camera inference and Android speech output remain on device.
 
-Automatic Android spoken corrections now work independently of the backend. Gemini conversation requires the USB development connection or an actual Render HTTPS service.
+Automatic Android spoken corrections work independently of the backend. Gemini conversation and agent requests use the Render service. Paid service creation was rejected for missing payment information; the free tier was used. Upgrade to an always-on plan after billing activation to avoid cold-start delays.
 
 ## Deploy the prepared backend
 
-1. Use source in this project in a Git repository you control. Publishing/committing/pushing requires the owner's authorization; this project has not been automatically published.
+1. Source was published to the owner's private repository with explicit authorization. For a fresh deployment, use your own authorized repository and GitHub connection, or the scoped deploy-key route documented in `AGENT-COMMANDS.md`.
 2. In https://dashboard.render.com/, choose New → Blueprint and select the repository containing `render.yaml`.
 3. Review the `starter` paid-service cost before deployment. Build: `npm ci`; start: `npm run server`; health path: `/health`.
 4. Enter `GEMINI_API_KEY` privately in Render Environment settings. Never put it into the APK, source repository or chat.
