@@ -1,0 +1,4 @@
+import {useEffect,useState} from 'react';
+import {db} from '../storage/db';
+import {localDay} from './catalog';
+export default function ReminderBanner(){const [due,setDue]=useState<string[]>([]);useEffect(()=>{const check=async()=>{const now=new Date(),minute=now.getHours()*60+now.getMinutes(),day=localDay(now);const reminders=await db.reminders.toArray();const eligible=reminders.filter(r=>{const [h,m]=r.time.split(':').map(Number);return r.enabled&&minute>=h*60+m&&minute<h*60+m+15&&r.lastShown!==day;});if(eligible.length){for(const r of eligible)await db.reminders.update(r.id!,{lastShown:day});setDue(eligible.map(r=>r.title));}};void check().catch(()=>{});const interval=setInterval(()=>void check().catch(()=>{}),30000);return()=>clearInterval(interval);},[]);return due.length?<div className="notice" role="status"><span>Reminder · {due.join(' · ')}</span><button className="secondary" onClick={()=>setDue([])}>Dismiss</button></div>:null;}

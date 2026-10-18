@@ -1,0 +1,7 @@
+import {useEffect,useState} from 'react';
+import {liveQuery} from 'dexie';
+import {db} from '../storage/db';
+import {defaultGoals,type Food,type Meal,type Metric,type Goals,type Reminder,type Plan,type Fast} from './schema';
+import {initializeWellness} from './service';
+export type WellnessState={foods:Food[];meals:Meal[];metrics:Metric[];goals:Goals;reminders:Reminder[];plans:Plan[];fasts:Fast[];error:string;loading:boolean};
+export function useWellness(){const [state,setState]=useState<WellnessState>({foods:[],meals:[],metrics:[],goals:defaultGoals,reminders:[],plans:[],fasts:[],error:'',loading:true});useEffect(()=>{let cancelled=false;const subscription=liveQuery(async()=>{const [foods,meals,metrics,goals,reminders,plans,fasts]=await Promise.all([db.foods.toArray(),db.meals.orderBy('date').reverse().toArray(),db.metrics.orderBy('date').reverse().toArray(),db.goals.get('goals'),db.reminders.toArray(),db.plans.toArray(),db.fasts.toArray()]);return{foods,meals,metrics,goals:goals??defaultGoals,reminders,plans,fasts};}).subscribe({next:data=>{if(!cancelled)setState({...data,error:'',loading:false});},error:()=>{if(!cancelled)setState(s=>({...s,loading:false,error:'Could not read wellness data. Check device storage.'}));}});void initializeWellness().catch(()=>{if(!cancelled)setState(s=>({...s,error:'Could not initialize the food catalog. Check device storage.'}));});return()=>{cancelled=true;subscription.unsubscribe();};},[]);return state;}

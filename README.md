@@ -4,6 +4,20 @@ Android-first, local-camera movement companion with optional Gemini conversation
 
 Live web app/backend: **https://chinnu-ai.onrender.com**. Private source: https://github.com/ChinmayRERC/chinnu-ai. The deployed free service can have cold starts; an always-on paid service requires enabling Render billing. See `AGENT-COMMANDS.md` for the deployment's private-source build route.
 
+## v0.3 wellness and light design
+
+- Original polished light theme, native light splash and animated **CHINNU-AI** launch, including reduced-motion handling.
+- Nutrition: 26 rounded generic starter foods, custom labels, favorites/search, gram portions, editable meal diary, macros/fiber and optional known-data micronutrient totals. Six original recipes support ingredient review and atomic diary logging.
+- Optional food-photo estimate through Gemini only after separate photo consent; every result requires review. Manual Open Food Facts barcode lookup is available when a complete label exists. Exercise videos remain local.
+- Health: manual water, weight, sleep, additional steps, waist, activity duration and glucose notes, history and user-chosen goals. No sensor, medical score, inferred calories burned or diagnosis is fabricated.
+- Plans: editable meal/workout/yoga routines, pause/resume, conservative restrictions and personal completion dates.
+- Reminders: in-app banners and opt-in Android daily inexact notifications through Capacitor. Refresh notification schedules after changes.
+- More: seven-day reports, private real-data challenges, profile editor, validated JSON backup/restore, FAQ, non-content diagnostics and honest integration status.
+- Agent actions cover food/water/metric logging, food search, daily summary, reminders and a neutral eating-break timer as well as navigation and movement tools.
+- Existing v1 history migrates to database v2. Delete/export/backup cover the new tables. No application/provider access keys are backed up.
+
+See `HEALTHIFY-FEATURE-PARITY.md` for the REA evidence, implemented counterparts and remaining service/integration gaps. This is an original implementation, not copied HealthifyMe source, graphics or food data.
+
 ## v0.2 agent and visual instruction update
 
 The floating **Ask Chinnu** agent accepts text requests and opt-in live microphone conversation across app pages. It can navigate, open exercises, show original step illustrations/animated guides, control training, mute/unmute coaching, run the gentle breathing timer, save explicitly supplied check-ins, read real progress, suggest a local plan, show reports and request PDF export/data deletion. Tool results come from the app before the voice model may claim success. Camera/file-picker gestures and destructive/export confirmations remain on device. This is an in-app agent, not Siri or an OS-wide assistant.
@@ -121,9 +135,9 @@ Browser tests use installed Google Chrome. Unit fixtures exercise numeric geomet
 - Uploaded clips play and analyze in real time; support is limited to browser-decodable clips up to two minutes/150 MB. Frame-rate consistency is not guaranteed on slow devices.
 - Hold timers do not prove full pose recognition. Scores are rule-based estimates, not safety or clinical metrics.
 - History stores measurements locally; snapshots are discarded on leaving the trainer. OS/browser storage retention applies. Android app backup is disabled.
-- Sleep tip includes a public basis; scheduled hydration/sleep notifications, richer wellness content, iOS native packaging and offline PWA service-worker caching remain future work.
+- Sleep/food tips include a public basis. Android local reminders now work; native iOS packaging and offline PWA service-worker caching remain future work.
 - Cloud plan endpoint is an educational text proposal only and is not applied by the app; no unvalidated AI plan silently changes training.
-- Coach handoff is a local export stub, marked Coming soon. No accounts, bookings, payments, wearables or diet database.
+- Coach handoff is a local export stub, marked Coming soon. No accounts, bookings, payments or wearables are connected. The food catalog is a small rounded starter plus custom/imported labels, not a comprehensive licensed diet database.
 
 ## Native migration
 

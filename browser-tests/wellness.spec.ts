@@ -1,0 +1,18 @@
+import {test,expect,type Page} from '@playwright/test';
+async function onboard(page:Page){await page.goto('/');await page.getByPlaceholder('Your name').fill('Wellness test');await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByRole('button',{name:'Continue',exact:true}).click();await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Find my flow'}).click();await expect(page.getByRole('heading',{name:'Your pace. Your progress.'})).toBeVisible();}
+test('light UI, food diary editing, water persistence and in-app reminders',async({page})=>{
+ const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));await onboard(page);expect(await page.evaluate(()=>getComputedStyle(document.body).color)).toBe('rgb(25, 54, 46)');
+ await page.screenshot({path:'test-results/chinnu-light-home.png',fullPage:true});
+ await page.getByRole('navigation',{name:'Wellness features'}).getByRole('button',{name:'Nutrition',exact:true}).click();await page.getByPlaceholder('Rice, dal, banana…').fill('banana');await page.getByLabel('Portion in grams').fill('150');await page.getByRole('button',{name:'Log Banana',exact:true}).click();await expect(page.locator('.meal-log')).toContainText('150 g · 134 kcal');
+ await page.locator('.meal-log').getByRole('button',{name:/^Banana/}).click();await page.getByRole('heading',{name:'Edit Banana'}).waitFor();await page.getByLabel('Grams',{exact:true}).fill('200');await page.getByRole('button',{name:'Save edit'}).click();await expect(page.locator('.meal-log')).toContainText('200 g · 178 kcal');
+ await page.getByRole('navigation',{name:'Wellness features'}).getByRole('button',{name:'Health',exact:true}).click();await page.getByLabel('Value (ml)').fill('250');await page.getByRole('button',{name:'Save measurement'}).click();await expect(page.locator('.health-stat').first()).toContainText('250 ml');
+ await page.reload();await page.getByRole('navigation',{name:'Wellness features'}).getByRole('button',{name:'Health',exact:true}).click();await expect(page.locator('.health-stat').first()).toContainText('250 ml');
+ await page.getByRole('button',{name:'Reminders',exact:true}).click();await page.getByLabel('Message',{exact:true}).fill('Stretch gently');await page.getByRole('button',{name:'Add reminder',exact:true}).click();await expect(page.locator('.metric-row')).toContainText('Stretch gently');await expect(page.locator('.metric-row')).toContainText('In-app only');
+ await page.screenshot({path:'test-results/chinnu-light-wellness.png',fullPage:true});expect(errors).toEqual([]);
+});
+test('meal/workout plans persist and challenges use real data',async({page})=>{
+ await onboard(page);await page.getByRole('navigation',{name:'Wellness features'}).getByRole('button',{name:'Plans',exact:true}).click();await page.getByLabel('Plan name').fill('Gentle start');await page.getByRole('button',{name:'Add exercise',exact:true}).click();await page.getByRole('button',{name:'Save plan',exact:true}).click();await expect(page.getByRole('heading',{name:'Gentle start'})).toBeVisible();
+ await page.getByRole('button',{name:'Mark routine complete',exact:true}).click();await expect(page.getByRole('button',{name:'Marked complete today'})).toBeDisabled();
+ await page.getByRole('navigation',{name:'Wellness features'}).getByRole('button',{name:'More',exact:true}).click();await page.getByRole('button',{name:'Challenges',exact:true}).click();await expect(page.getByText('0 / 3 days').first()).toBeVisible();
+ await page.getByRole('button',{name:'Integrations',exact:true}).click();await expect(page.getByRole('heading',{name:'CGM / metabolic panel'})).toBeVisible();await expect(page.getByText('Not connected',{exact:true}).first()).toBeVisible();
+});

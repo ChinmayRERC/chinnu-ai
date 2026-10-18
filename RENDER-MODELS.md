@@ -33,7 +33,7 @@ For automated deployment, add `RENDER_API_KEY` privately to the ignored `.env` a
 | Speech recognition without proprietary API | Optional future faster-whisper | Whisper tiny/base/small through CTranslate2 INT8 | CPU-capable. Start with tiny/base for experiments; accuracy, languages and real-time speed need testing. Not deployed/integrated yet. |
 | Self-hosted text assistant | Optional future quantized small instruct model | llama.cpp with a suitably licensed small model | CPU works, but model size/context/concurrency dominate RAM and latency. Runtime MIT license does not determine weights' license. Not deployed/integrated yet. |
 | Session planning and explanation | Existing Gemini text endpoints | Small LLM through an authenticated API | Proposals must remain constrained by the local exercise engine. Current app does not apply cloud-generated plans. |
-| Cloud visual descriptions | Not enabled | A separately hosted multimodal model | Would require new explicit image-sharing consent and additional compute. Not needed for local live pose corrections. |
+| Selected food-photo estimate | Gemini image-capable text model with separate photo consent | A separately hosted multimodal model could replace it | v0.3 implements single-photo review; no automatic logging or exercise-video upload. Image estimates are unverified and must be edited/confirmed. |
 
 ## Budget reality
 

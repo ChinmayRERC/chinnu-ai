@@ -30,6 +30,15 @@ Open an exercise before requesting camera/video input. Finish the current sessio
 
 ## Habits and progress
 
+- “Open Nutrition.” / “Open Health.” / “Open Plans.” / “Open More.”
+- “Log 250 milliliters of water.”
+- “Record my weight as 70 kilograms.”
+- “Log 7 hours of sleep.”
+- “Add 500 additional steps.”
+- “Search for banana in my food catalog.” Then “Log 100 grams of banana as a snack.”
+- “Show my daily health summary.”
+- “Remind me to take a movement break at 18:00 daily.” (in-app reminder; Android notification scheduling requires its on-device button)
+
 - “Start the breathing timer.”
 - “Stop the breathing timer.”
 - “How many real sessions have I completed?”
@@ -39,6 +48,8 @@ Open an exercise before requesting camera/video input. Finish the current sessio
 - “Delete my local data.” (on-device confirmation)
 
 The agent asks for missing check-in values rather than inventing them. Health notes/results requested through cloud agent tools are sent to the model only as part of that request. Deletion disconnects the microphone. Conservative-mode exercise restrictions apply equally to voice, text and touch.
+
+Food logging requires an exact catalog ID, meal and gram amount. Ask for quantity if absent. Units are canonical: water ml, weight kg, sleep hours, steps additional count, waist cm, activity minutes and glucose mg/dL manual note. Do not infer quantities, nutrition, sensor connection or treatment. Food-photo selection and cloud-image consent are separate on-device actions, not background agent access.
 
 ## Tool execution protocol
 

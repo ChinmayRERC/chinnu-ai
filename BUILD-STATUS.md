@@ -1,8 +1,23 @@
-# Chinnu AI v0.2.0 — build and deployment status
+# Chinnu AI v0.3.0 — build and deployment status
 
 Verified 2026-10-18.
 
+## v0.3 local verification and expansion
+
+- Current APK: versionCode 4, versionName 0.3.0, 21,351,451 bytes.
+- SHA-256: `ed17ca058565d76787c5107b11b8c13eaff4e97d826cf024c451f470ca4ee7bf`.
+- Light-theme UI and animated CHINNU-AI launch; native splash and system bars updated.
+- Nutrition, recipes, food-photo review, barcode label lookup, health logs, goals, plans, reminders, reports, challenges and backups implemented. Exact parity limits and REA Evidence are in `HEALTHIFY-FEATURE-PARITY.md`.
+- Twenty-four unit tests passed, including migration, retained food-log composition, transactional meal logging, backup validation/restore and complete deletion.
+- Five browser integration tests passed, including the new food/water/reminder/plan flows. Light home and health screenshots were inspected.
+- Frontend production build and backend TypeScript check passed. New routes are lazy-loaded.
+- Android build passed after explicitly downloading and checking the timed-out Kotlin compiler dependency against Maven Central's published SHA-1.
+- Android reminders use inexact scheduling; the exact-alarm permission is removed from the merged app manifest.
+- The phone was disconnected at this stage. Installation and v0.3 public endpoint verification are pending; the receipt below records the earlier v0.2 deployment.
+
 ## Delivered
+
+The following entries record the prior v0.2 delivery, retained until the v0.3 cloud/device checks complete.
 
 - Android testing APK: `../chinnu-ai-debug.apk`, versionCode 3, versionName 0.2.0.
 - APK size: 21,412,204 bytes.

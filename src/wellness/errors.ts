@@ -1,0 +1,1 @@
+export function errorText(error:unknown){if(error&&typeof error==='object'&&'issues'in error){const issue=(error as {issues:{message:string}[]}).issues[0];return issue?.message??'Check your entries.';}return error instanceof Error?error.message:'Could not complete the action.';}
