@@ -11,7 +11,7 @@ describe('anonymous app session protection',()=>{
 });
 function sound(bytes=8000){const p=Buffer.alloc(bytes);for(let i=0;i<bytes;i+=2)p.writeInt16LE(6000,i);return p;}
 describe('bounded short-utterance audio',()=>{
- it('does not send silence to ASR and ends after a sustained pause',()=>{const b=new UtteranceBuffer();expect(b.push(Buffer.alloc(8000))).toBeNull();expect(b.push(sound())).toBeNull();let output:Buffer|null=null;for(let i=0;i<4;i++)output=b.push(Buffer.alloc(8000));expect(output?.length).toBe(40000);expect(b.push(Buffer.alloc(8000))).toBeNull();});
+ it('adapts to background noise, keeps a short pre-roll and ends after a sustained pause',()=>{const b=new UtteranceBuffer();expect(b.push(Buffer.alloc(8000))).toBeNull();expect(b.push(sound())).toBeNull();let output:Buffer|null=null;for(let i=0;i<4;i++)output=b.push(Buffer.alloc(8000));expect(output?.length).toBe(48000);expect(b.push(Buffer.alloc(8000))).toBeNull();});
  it('caps continuous microphone segments at twelve seconds',()=>{const b=new UtteranceBuffer();let output:Buffer|null=null;for(let i=0;i<48;i++)output=b.push(sound());expect(output?.length).toBe(384000);expect(()=>b.push(Buffer.alloc(3))).toThrow();});
  it('resamples generated PCM to the ASR sample rate',()=>{expect(resamplePCM(Buffer.alloc(44100),22050).length).toBe(32000);});
 });

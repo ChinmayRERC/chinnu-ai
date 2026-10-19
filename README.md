@@ -10,7 +10,7 @@ Open the app, complete local onboarding and tap **Ask Chinnu**. Type a request o
 
 NVIDIA speech is currently English: Parakeet recognizes short utterances after a pause; Nemotron handles complex requests; Magpie speaks calm replies. Explicit commands such as “Open my progress”, “Pause”, “Show me how to do a squat” and a specified water amount use a fast validated command path without an unnecessary LLM hop. App results are acknowledged before the assistant confirms them.
 
-Microphone transmission pauses while Chinnu processes/speaks to reduce echo. Tap **Interrupt · listen** to stop a reply and speak again. This is a short-utterance voice pipeline, not native simultaneous streaming audio or always-listening background Siri integration. Camera permissions, file selection and destructive/export confirmations remain on device.
+Echo cancellation suppresses Chinnu's own output, while sustained user speech automatically interrupts playback and resumes listening; **Interrupt · listen** remains available as a manual fallback. This is a short-utterance voice pipeline, not always-listening background Siri integration. Camera permissions, file selection and destructive/export confirmations remain on device.
 
 ## Features
 
@@ -66,11 +66,11 @@ node --env-file=.env --import tsx server/index.ts
 The deployed configuration uses:
 
 - Decision primary: `nvidia/nemotron-3.5-super-vl-120b-a12b`, thinking disabled and 512 output tokens.
-- Decision fallback: `nvidia/nemotron-3-super-120b-a12b`; at most one different-model fallback, with a 19-second total deadline. HTTP-200 error strings, empty replies and invalid app tools are rejected. The voice session can speak a concise failure without disconnecting if both decision models are unavailable.
+- Decision fallback: `nvidia/nemotron-3-super-120b-a12b`; at most one different-model fallback, with a 13-second total deadline. HTTP-200 error strings, empty replies and invalid app tools are rejected. Recoverable provider failures keep the voice session listening.
 - Speech recognition: hosted Parakeet TDT English offline recognizer.
-- Speech output: `Magpie-Multilingual.EN-US.Aria.Calm`, PCM 22,050 Hz.
+- Speech output: English text with the hosted endpoint's verified `Magpie-Multilingual.HI-IN.Aria` voice for Indian-accented delivery, streamed as PCM at 22,050 Hz.
 - Selected-photo vision: `nvidia/nemotron-3.5-super-vl-120b-a12b`.
-- `PUBLIC_APP_SESSIONS=true`, one anonymous app session per client cache, per-IP session throttles, 60 HTTP actions per session, two concurrent cloud voice sessions, ten-minute voice lifetime, 40 turns per voice session and a default 300 provider-call/day process budget.
+- `PUBLIC_APP_SESSIONS=true`, one anonymous app session per client cache, per-IP session throttles, 60 HTTP actions per session, two concurrent cloud voice sessions, thirty-minute voice lifetime, 120 turns per voice session and a default 300 provider-call/day process budget.
 
 Budgets are in-memory and reset with an instance restart. Production abuse protection needs persistent/distributed accounting and provider-side quota controls. Legacy Gemini text/image support remains an explicit operator-only alternative; it is not the selected deployed provider. There is no Gemini live-voice route in v0.4.
 
@@ -112,7 +112,7 @@ node --env-file=.env --import tsx scripts/verify-voice-flow.ts
 - Camera/workout video never leaves the device. Frame snapshots are temporary; measurements persist locally. No recording is enabled without its user action/consent.
 - Microphone audio, text requests, requested app results and explicitly selected food photos reach NVIDIA through Render. Chinnu does not intentionally log/store their content. Provider/platform terms and retention are separate.
 - Browser and APK histories are separate; no account/cloud history sync. Backups exclude provider credentials and media. Exported files are user controlled.
-- Voice is English and turn-based. Coarse energy endpointing can mis-trigger in noisy environments. Microphone pauses during replies, with explicit interrupt rather than guaranteed hands-free barge-in. Stop/Pain buttons always remain local.
+- Voice recognition is English and turn-based. Adaptive energy endpointing still needs real noisy-gym testing. Sustained speech can interrupt a reply automatically, with an explicit interrupt fallback. Stop/Pain buttons always remain local.
 - Provider latency, rate limits, free-service cold starts and trial expiry affect cloud availability. Local training/manual diaries/native spoken cues remain available.
 - Some yoga checks measure only a small subset of alignment. Child's pose is a rest timer, not alignment scoring. No breath, load, force, spinal curvature, injury or diagnosis detection. Hip hinge is unloaded practice.
 - Threshold validation, calibration/body-proportion adaptation, robust progression, automatic live-degradation rest prompts, iOS native, widgets and wearable/CGM integrations remain unfinished.

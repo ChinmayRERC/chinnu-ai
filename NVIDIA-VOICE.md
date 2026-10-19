@@ -8,9 +8,9 @@ The operator can use one `NVIDIA_API_KEY` for the hosted services. Both supplied
 
 ## Verified provider capabilities
 
-- **Magpie:** gRPC `RivaSpeechSynthesis` at `grpc.nvcf.nvidia.com:443`, function `877104f7-e885-42b9-8de8-f6e4c6303969`. The config lists `Magpie-Multilingual.EN-US.Aria.Calm`; synthesis is mono PCM16 at 22,050 Hz.
+- **Magpie:** gRPC `RivaSpeechSynthesis` at `grpc.nvcf.nvidia.com:443`, function `877104f7-e885-42b9-8de8-f6e4c6303969`. English text uses the hosted endpoint's verified `Magpie-Multilingual.HI-IN.Aria` voice for Indian-accented delivery; synthesis streams mono PCM16 at 22,050 Hz.
 - **Parakeet:** gRPC `RivaSpeechRecognition`, function `d3fe9151-442b-4204-a70d-5fcc597fd610`. The config exposed `parakeet-tdt-0.6b-en-US-asr-offline`, English only. Short finalized utterances are submitted using Recognize; this is not a word-by-word streaming recognizer.
-- **Nemotron decisions (backend v0.4.1):** primary `nvidia/nemotron-3.5-super-vl-120b-a12b`, fallback `nvidia/nemotron-3-super-120b-a12b`. Thinking is disabled, decision output is capped at 512 tokens, and the entire decision has a 19-second deadline (8-second primary attempt, up to 10-second fallback). Both full-contract tests returned the correct Health action: primary about 0.9 seconds, forced-failure fallback about 1.4 seconds. These are individual observations, not latency guarantees. The earlier lightning model is no longer primary.
+- **Nemotron decisions (backend v0.4.2):** primary `nvidia/nemotron-3.5-super-vl-120b-a12b`, fallback `nvidia/nemotron-3-super-120b-a12b`. Thinking is disabled, decision output is capped at 512 tokens, and the entire decision has a 13-second deadline (5.5-second primary attempt, up to 6.5-second fallback). Earlier full-contract observations returned the correct Health action in about 0.9 seconds primary and 1.4 seconds forced-fallback; these are observations, not latency guarantees.
 - **Vision:** `nvidia/nemotron-3.5-super-vl-120b-a12b` accepted a synthetic image and returned a description. Actual food-image accuracy is not established; nutrition estimates always require review.
 
 ## Pipeline
@@ -26,7 +26,7 @@ Microphone permission + cloud consent
   -> Magpie voice receipt
 ```
 
-During processing/playback microphone transmission pauses to reduce echo. **Interrupt · listen** cancels the current cloud job and playback. This is turn-based speech, not simultaneous Gemini Live or background always-listening behavior. Coarse endpointing is not a breathing/emotion detector and needs real noisy-gym testing.
+Echo cancellation reduces playback leakage. Sustained user speech automatically cancels the current cloud job and playback; **Interrupt · listen** remains a manual fallback. This is turn-based speech, not background always-listening behavior. Adaptive endpointing is not a breathing/emotion detector and needs real noisy-gym testing.
 
 Immediate measured form cues can also use native Android TTS without internet. Camera/workout videos stay local. Cloud recordings, text requests, requested app results and selected food images are subject to NVIDIA's terms; Chinnu intentionally does not log or persist their content.
 
@@ -35,7 +35,7 @@ Immediate measured form cues can also use native Android TTS without internet. C
 - Random short-lived server token, cached by the client (no permanent key in browser/APK).
 - 12 session-creation attempts/IP/minute; 100 active session records maximum.
 - 60 authorized HTTP requests/session; 2 concurrent voice sessions.
-- Voice lifetime 10 minutes, maximum 40 turns, bounded input/output message sizes and 12-second input segments.
+- Voice lifetime 30 minutes, maximum 120 turns, bounded input/output message sizes and 12-second input segments.
 - Default 300 provider calls/day/process; operator-configurable. In-memory counters reset on restart. Production distribution needs persistent quota accounting and provider-side limits.
 - No unrestricted shell or cross-app automation. Existing confirmation and screening restrictions remain enforced locally.
 

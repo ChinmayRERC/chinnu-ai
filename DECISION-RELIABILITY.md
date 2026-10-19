@@ -12,7 +12,7 @@ The old adapter trusted a successful HTTP response's completion content and coul
 - Decision primary: `nvidia/nemotron-3.5-super-vl-120b-a12b`.
 - One fallback: `nvidia/nemotron-3-super-120b-a12b`.
 - Thinking off, non-streamed decisions, 512-token action output, parallel tool calls disabled.
-- 8-second primary attempt; up to 10-second fallback; 19-second overall deadline, including response-body reading.
+- 5.5-second primary attempt; up to 6.5-second fallback; 13-second overall deadline, including response-body reading.
 - No repeated same-model loops. Client cancellation does not start a fallback.
 - HTTP-200 error text, empty/None envelopes, unrecognized tools, malformed/invalid actions and claims of completed actions without tools are rejected before execution.
 - Fallback consumes a second provider-budget unit; existing app-side validation and confirmations remain.

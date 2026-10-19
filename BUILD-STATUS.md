@@ -6,7 +6,7 @@ Verified 2026-10-18.
 
 - Live backend deployment: `dep-dbafoteq1p3s73bgp2l0`, source commit `2eee0c8`, health version 0.4.1.
 - Decision primary `nvidia/nemotron-3.5-super-vl-120b-a12b`; one fallback `nvidia/nemotron-3-super-120b-a12b`.
-- Thinking disabled, 512-token decisions, at most two distinct attempts and a 19-second total deadline. Provider error strings disguised as HTTP 200, empty outputs and invalid tool proposals are rejected before execution.
+- Thinking disabled, 512-token decisions, at most two distinct attempts and a 13-second total deadline. Provider error strings disguised as HTTP 200, empty outputs and invalid tool proposals are rejected before execution.
 - Local real-primary test returned Health in ~933 ms. Deliberately invalid primary plus real fallback returned Health in ~1,441 ms.
 - Both decision models deliberately unavailable: voice spoke a concise failure, kept the same session and then accepted a quick Progress command. No raw provider failure was exposed.
 - Public deployed browser paraphrase test returned HTTP 200 and actually navigated to Health in ~1,450 ms, without writing health records or requiring a code/key.
@@ -34,7 +34,7 @@ Verified 2026-10-18.
 ## Verified NVIDIA services
 
 - One supplied NVIDIA credential successfully accessed both speech services and the hosted model catalog; Render is configured with one primary NVIDIA_API_KEY.
-- Magpie gRPC synthesis generated PCM16 audio at 22,050 Hz. Calm voice `Magpie-Multilingual.EN-US.Aria.Calm` is present in actual provider config and was tested.
+- Magpie gRPC synthesis generated streaming PCM16 audio at 22,050 Hz. Indian-locale voice `Magpie-Multilingual.HI-IN.Aria` is present in the actual provider config and was tested with English text.
 - Parakeet exposed an English offline recognizer and correctly transcribed generated speech “Open my progress.”
 - The earlier lightning model returned valid responses but had variable latency; it is no longer primary. The current primary/fallback and actual full-contract checks are recorded in the patch section above. Fast explicit commands still bypass an unnecessary LLM hop.
 - Vision model `nvidia/nemotron-3.5-super-vl-120b-a12b` accepted a synthetic drawing and returned a description. Food recognition/nutrition accuracy is not established by that synthetic check.
@@ -47,7 +47,7 @@ Verified 2026-10-18.
 - 5 Chrome integration tests passed; access-code field absence is asserted in Settings.
 - Render Blueprint API validation returned HTTP 200, valid true. Current service is API-managed; standalone Blueprint is not being synced over the custom private-source bootstrap.
 - Android `assembleDebug` passed and APK update installation succeeded.
-- Public Render health now reports version 0.4.1, NVIDIA voice/text, anonymousSessions true, a 19-second decision deadline and videoUpload false.
+- The v0.4.2 release health contract reports NVIDIA voice/text, anonymousSessions true, a 13-second decision deadline and videoUpload false.
 - Local and public Render synthetic speech protocol tests passed: automatic session → Magpie-generated test audio → Parakeet → Progress tool → synthetic client acknowledgement → Magpie spoken receipt.
 - Real deployed Chrome fake-microphone test passed: actual AudioWorklet capture/resampling, WebSocket audio, Parakeet transcription, actual Progress navigation and 299,008 audio bytes delivered to browser. No real microphone recording or access code was used.
 - Actual Oppo Settings shows zero application-access-code inputs and the NVIDIA voice heading. A text request navigated to Progress with an automatic public session. Phone was returned to Today.
@@ -61,7 +61,7 @@ The v0.3 light UI, CHINNU-AI launch animation, local camera/video pose pipeline,
 - NVIDIA Build keys are testing credentials with quotas and expiration, not unlimited free production inference. Provider and Render usage are separate.
 - Speech is English, short-utterance/turn-based. It is not word-by-word streaming ASR or simultaneous full-duplex Gemini Live. Microphone transmission pauses during processing/playback; Interrupt stops speech and resumes listening.
 - Coarse energy endpointing, real microphone quality, noisy-gym accuracy, echo and speaker loudness need hands-on testing. Automated speech tests used synthetic audio, not the user's voice.
-- In-memory controls: 12 session attempts/IP/minute, 100 app sessions, 60 HTTP actions/session, two voice sessions, ten-minute voice lifetime, 40 turns/session and a default 300 provider-call/day/process budget. Counters reset on restart; persistent production abuse accounting remains future work.
+- In-memory controls: 12 session attempts/IP/minute, 100 app sessions, 60 HTTP actions/session, two voice sessions, thirty-minute voice lifetime, 120 turns/session and a default 300 provider-call/day/process budget. Counters reset on restart; persistent production abuse accounting remains future work.
 - Render free compute can cold-start. Paid compute is still blocked by missing workspace billing details.
 - Local camera, manual logs and Android spoken cues remain available if cloud voice disconnects or quota is exhausted.
 - Exercise thresholds are unvalidated prototypes. Native camera/microphone optimization, calibration/progression, expert validation and real wearable/CGM/human-coach/payment/social integrations remain unfinished. See `HEALTHIFY-FEATURE-PARITY.md`.

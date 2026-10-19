@@ -25,7 +25,7 @@ const imageModel=process.env.NVIDIA_VISION_MODEL??'nvidia/nemotron-3.5-super-vl-
 function authorized(req:express.Request,res:express.Response){if(!access.authorize(req.headers.authorization)){res.status(401).json({error:'App session expired. Please retry.'});return false;}return true;}
 function budget(res:express.Response){if(!access.consume()){res.status(429).json({error:'The app’s daily AI allowance is used. Local tracking and spoken corrections remain available.'});return false;}return true;}
 
-app.get('/health',(_req,res)=>res.json({status:'ok',version:'0.4.1',theme:'light',agentActions:[...agentActions],voiceConfigured:nvidiaReady()&&textReady(),voiceProvider:nvidiaReady()?'nvidia':null,speechRecognition:'parakeet-offline-short-utterances',speechSynthesis:'magpie',voiceLanguage:nvidiaConfig.language,anonymousSessions:anonymous,textProvider:process.env.TEXT_PROVIDER??'gemini',decisionModel:nvidiaConfig.textModel,decisionFallbackModel:process.env.NVIDIA_TEXT_FALLBACK_MODEL??'nvidia/nemotron-3-super-120b-a12b',decisionDeadlineMs:19000,historyStorage:'device-only',videoUpload:false,foodPhotoUpload:'selected-photo-with-consent-only'}));
+app.get('/health',(_req,res)=>res.json({status:'ok',version:'0.4.2',theme:'light',agentActions:[...agentActions],voiceConfigured:nvidiaReady()&&textReady(),voiceProvider:nvidiaReady()?'nvidia':null,speechRecognition:'parakeet-adaptive-short-utterances',speechSynthesis:'magpie-streaming',voiceLanguage:nvidiaConfig.language,anonymousSessions:anonymous,textProvider:process.env.TEXT_PROVIDER??'gemini',decisionModel:nvidiaConfig.textModel,decisionFallbackModel:process.env.NVIDIA_TEXT_FALLBACK_MODEL??'nvidia/nemotron-3-super-120b-a12b',decisionDeadlineMs:13000,historyStorage:'device-session',videoUpload:false,foodPhotoUpload:'selected-photo-with-consent-only'}));
 app.post('/sessions',(req,res)=>{
  if(!access.allow(req.ip??'unknown')){res.status(429).json({error:'Too many session attempts. Please wait a minute.'});return;}
  const parsed=z.object({clientId:z.string().uuid().optional(),accessCode:z.string().max(256).optional()}).strict().safeParse(req.body);
@@ -70,14 +70,14 @@ const server=createServer(app);const wss=new WebSocketServer({server,path:'/voic
 wss.on('connection',socket=>{
  let voice:NvidiaVoiceSession|null=null;let session:ReturnType<AccessStore['get']>=null;let byteCount=0;
  const timeout=setTimeout(()=>socket.close(1008,'App session required'),5000);
- const lifetime=setTimeout(()=>socket.close(1000,'Session time limit. Reconnect to continue.'),10*60000);
+ const lifetime=setTimeout(()=>socket.close(1000,'Session time limit. Reconnect to continue.'),30*60000);
  const bandwidth=setInterval(()=>{byteCount=0;},1000);
  const heartbeat=setInterval(()=>{if(socket.readyState===socket.OPEN)socket.ping();},25000);
  socket.on('message',raw=>{try{
   const text=raw.toString();byteCount+=Buffer.byteLength(text);if(byteCount>100000){socket.close(1008,'Audio rate limit');return;}const input=JSON.parse(text) as Record<string,unknown>;
   if(!voice){if(input.type!=='auth'||typeof input.token!=='string'){socket.close(1008,'Invalid app session');return;}
    session=access.get(input.token);if(!session||session.voice||access.voiceCount()>=2||!nvidiaReady()){socket.send(JSON.stringify({type:'error',error:!nvidiaReady()?'NVIDIA speech is not configured by the operator. Local spoken coaching is available.':'Voice sessions are busy or expired. Please retry shortly.'}));socket.close();return;}
-   session.voice=true;clearTimeout(timeout);voice=new NvidiaVoiceSession(socket,access);voice.start();return;
+   session.voice=true;clearTimeout(timeout);voice=new NvidiaVoiceSession(socket,access,session);voice.start();return;
   }
   voice.handle(input);
  }catch{socket.close(1008,'Invalid audio or app message');}});

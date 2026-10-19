@@ -18,11 +18,11 @@ export class DecisionModelClient {
  constructor(private config:Config){this.fetcher=config.fetch??fetch;}
  async request(messages:unknown[],options:RequestOptions={}):Promise<ModelMessage>{
   if(!this.config.key)throw new ModelUnavailableError();
-  const total=AbortSignal.timeout(19000);const candidates=[...new Set([this.config.primary,this.config.fallback].filter(Boolean))].slice(0,2);
+  const total=AbortSignal.timeout(13000);const candidates=[...new Set([this.config.primary,this.config.fallback].filter(Boolean))].slice(0,2);
   for(let i=0;i<candidates.length;i++){
    if(options.signal?.aborted)throw new DOMException('Cancelled','AbortError');if(total.aborted)break;
    if(i===1)options.onFallback?.();const model=candidates[i],started=Date.now();
-   const requested=i===0?this.config.primaryMs??8000:this.config.fallbackMs??10000;const ms=Math.max(100,Math.min(12000,requested));
+   const requested=i===0?this.config.primaryMs??5500:this.config.fallbackMs??6500;const ms=Math.max(100,Math.min(8000,requested));
    const signals=[total,AbortSignal.timeout(ms),...(options.signal?[options.signal]:[])];
    try{
     const response=await this.fetcher('https://integrate.api.nvidia.com/v1/chat/completions',{method:'POST',headers:{Authorization:`Bearer ${this.config.key}`,'Content-Type':'application/json'},signal:AbortSignal.any(signals),body:JSON.stringify({model,messages,temperature:.1,stream:false,max_tokens:Math.min(options.maxTokens??512,1000),...(model.startsWith('nvidia/nemotron')?{chat_template_kwargs:{enable_thinking:false}}:{}),...(model.startsWith('openai/gpt-oss')?{reasoning_effort:'low'}:{}),...(options.tools?{tools:options.tools,tool_choice:'auto',parallel_tool_calls:false}:{}),...(options.json?{response_format:{type:'json_object'}}:{})})});

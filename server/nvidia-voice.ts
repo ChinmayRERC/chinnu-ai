@@ -1,44 +1,43 @@
 import {randomUUID} from 'node:crypto';
 import {WebSocket} from 'ws';
 import {z} from 'zod';
-import {synthesize,transcribe} from './nvidia';
+import {synthesizeStream,transcribe} from './nvidia';
 import {planAgent,quickAction,appStateSchema,type AppState,type History} from './brain';
 import {UtteranceBuffer} from './audio';
 import {library} from '../src/exercises/engine';
 import type {AgentAction,ActionResult} from '../src/agent/actions';
-import type {AccessStore} from './access';
+import type {AccessStore,AppSession} from './access';
 import {ModelUnavailableError} from './model-client';
 export const poseContextSchema=z.object({exercise:z.string().max(80),rep:z.number().min(0).max(10000),tracking:z.enum(['reliable','unreliable']),measuredAngles:z.record(z.number().min(-360).max(360)),cue:z.string().max(240),score:z.number().min(0).max(100).nullable()});
 const resultSchema=z.object({ok:z.boolean(),message:z.string().max(1500),data:z.unknown().optional(),requiresUserAction:z.boolean().optional()});
 const coachingSchema=z.object({kind:z.enum(['correction','tracking','encouragement']),text:z.string().max(400),measurement:z.object({feature:z.string().max(40),value:z.number().min(0).max(180),min:z.number(),max:z.number()}).optional()});
 export class NvidiaVoiceSession {
  private collector=new UtteranceBuffer();private job:AbortController|null=null;private closed=false;private lastCoach=0;private lastContext=0;private turns=0;
- private state:AppState={page:'Today',exerciseId:null,availableExercises:[],conservativeMode:true};private history:History=[];private pose:z.infer<typeof poseContextSchema>|undefined;
+ private state:AppState={page:'Today',exerciseId:null,availableExercises:[],conservativeMode:true};private history:History;private pose:z.infer<typeof poseContextSchema>|undefined;
  private pending=new Map<string,{resolve:(r:ActionResult)=>void;timer:ReturnType<typeof setTimeout>;abort:()=>void;signal:AbortSignal}>();
- constructor(private socket:WebSocket,private access:AccessStore){}
+ constructor(private socket:WebSocket,private access:AccessStore,private appSession:AppSession){this.history=appSession.history;}
  private send(value:unknown){if(!this.closed&&this.socket.readyState===WebSocket.OPEN)this.socket.send(JSON.stringify(value));}
  private charge(){if(!this.access.consume())throw new Error('The app’s daily AI usage limit has been reached. Local spoken corrections still work.');}
  private async speech(text:string,signal:AbortSignal){
-  const short=text.replace(/https?:\/\/\S+/g,'').replace(/[*#_]/g,'').slice(0,300);if(!short.trim())return;this.charge();const audio=await synthesize(short,signal);if(signal.aborted||this.closed)return;this.send({type:'text',text:short});
-  for(let i=0;i<audio.pcm.length;i+=16384){if(signal.aborted||this.socket.readyState!==WebSocket.OPEN)return;const chunk=audio.pcm.subarray(i,i+16384);await new Promise<void>((resolve,reject)=>this.socket.send(JSON.stringify({type:'audio',data:chunk.toString('base64'),rate:audio.rate}),error=>error?reject(error):resolve()));}
+  const short=text.replace(/https?:\/\/\S+/g,'').replace(/[*#_]/g,'').slice(0,300);if(!short.trim())return;this.charge();this.send({type:'text',text:short});await synthesizeStream(short,chunk=>{if(!signal.aborted&&this.socket.readyState===WebSocket.OPEN)this.send({type:'audio',data:chunk.toString('base64'),rate:22050});},signal);
  }
  private run(task:(signal:AbortSignal)=>Promise<void>){
   if(this.job||this.closed)return;const controller=new AbortController();this.job=controller;this.send({type:'processing',provider:'nvidia'});
-  void task(controller.signal).catch(error=>{if(!controller.signal.aborted&&!this.closed){const message=String(error instanceof Error?error.message:'Speech service unavailable.');const safe=message.includes('daily AI')?message:'NVIDIA speech or model request failed. Local spoken coaching remains available; reconnect to retry.';this.send({type:'error',error:safe});this.socket.close(1011,'Cloud voice unavailable');}}).finally(()=>{if(this.job===controller){this.job=null;this.collector.reset();this.send({type:'turnComplete'});}});
+  void task(controller.signal).catch(error=>{if(!controller.signal.aborted&&!this.closed){const message=String(error instanceof Error?error.message:'Speech service unavailable.');const safe=message.includes('daily AI')?message:'That voice request failed, but I am still listening. Please try again.';this.send({type:'error',error:safe});}}).finally(()=>{if(this.job===controller){this.job=null;this.collector.reset();this.send({type:'turnComplete'});}});
  }
- start(){this.send({type:'ready',provider:'nvidia',mode:'utterance',language:'en-US'});this.run(signal=>this.speech('Hi, I’m Chinnu. Tell me what you’d like to practice, or ask me to open a feature.',signal));}
+ start(){this.send({type:'ready',provider:'nvidia',mode:'utterance',language:'en-US'});this.send({type:'text',text:'Chinnu is listening.'});}
  private async action(action:AgentAction,signal:AbortSignal):Promise<ActionResult>{
   if(signal.aborted)throw new Error('Cancelled');const id=randomUUID();
-  return new Promise((resolve,reject)=>{const cleanup=()=>{clearTimeout(timer);signal.removeEventListener('abort',abort);this.pending.delete(id);};const abort=()=>{cleanup();reject(new Error('Cancelled'));};const timer=setTimeout(()=>{cleanup();resolve({ok:false,message:'The app did not finish that action. Please check its screen; do not assume it succeeded.'});},45000);this.pending.set(id,{resolve:r=>{cleanup();resolve(r);},timer,abort,signal});signal.addEventListener('abort',abort,{once:true});this.send({type:'tool',id,action});});
+  return new Promise((resolve,reject)=>{const cleanup=()=>{clearTimeout(timer);signal.removeEventListener('abort',abort);this.pending.delete(id);};const abort=()=>{cleanup();reject(new Error('Cancelled'));};const timer=setTimeout(()=>{cleanup();resolve({ok:false,message:'The app did not finish that action. Please check its screen; do not assume it succeeded.'});},12000);this.pending.set(id,{resolve:r=>{cleanup();resolve(r);},timer,abort,signal});signal.addEventListener('abort',abort,{once:true});this.send({type:'tool',id,action});});
  }
  private async respond(text:string,signal:AbortSignal){
-  if(++this.turns>40)throw new Error('Session turn limit reached. Reconnect to continue.');
+  if(++this.turns>120)throw new Error('Session turn limit reached. Reconnect to continue.');
   this.send({type:'transcript',text});if(!quickAction(text))this.charge();
   let plan;try{plan=await planAgent(text,this.state,this.history,signal,()=>this.charge());}catch(error){if(signal.aborted)return;if(error instanceof ModelUnavailableError){await this.speech('The decision models are busy. I have not changed anything. Please try a short command or use the app buttons.',signal);return;}throw error;}if(signal.aborted)return;
   const results:ActionResult[]=[];
   for(const action of plan.actions.slice(0,4)){if(signal.aborted)return;results.push(await this.action(action,signal));}
   const receipt=results.length?results.map(r=>r.message).join(' '):plan.text;
-  this.history.push({role:'user',content:text},{role:'assistant',content:results.length?`Actual app results: ${JSON.stringify(results).slice(0,10000)}`:receipt});this.history=this.history.slice(-8);
+  this.history.push({role:'user',content:text},{role:'assistant',content:results.length?`Actual app results: ${JSON.stringify(results).slice(0,10000)}`:receipt});this.history.splice(0,Math.max(0,this.history.length-16));this.appSession.history=this.history;
   await this.speech(receipt||'Please rephrase that request.',signal);
  }
  handle(data:Record<string,unknown>){

@@ -14,8 +14,7 @@ try{
   const finish=(error?:Error)=>{clearTimeout(timeout);if(interval)clearInterval(interval);ws.close();if(error)reject(error);else resolve();};
   ws.on('open',()=>ws.send(JSON.stringify({type:'auth',token:credentials.token})));
   ws.on('message',raw=>{const message=JSON.parse(raw.toString());
-   if(message.type==='ready')console.log('NVIDIA voice ready:',message.provider,message.mode);
-   if(message.type==='turnComplete'&&!sent){sent=true;const input=Buffer.concat([pcm,Buffer.alloc(32000)]);let offset=0;interval=setInterval(()=>{if(offset>=input.length||ws.readyState!==WebSocket.OPEN){clearInterval(interval);return;}ws.send(JSON.stringify({type:'audio',data:input.subarray(offset,offset+3200).toString('base64')}));offset+=3200;},100);}
+   if(message.type==='ready'){console.log('NVIDIA voice ready:',message.provider,message.mode);if(!sent){sent=true;const input=Buffer.concat([pcm,Buffer.alloc(32000)]);let offset=0;interval=setInterval(()=>{if(offset>=input.length||ws.readyState!==WebSocket.OPEN){clearInterval(interval);return;}ws.send(JSON.stringify({type:'audio',data:input.subarray(offset,offset+3200).toString('base64')}));offset+=3200;},100);}}
    if(message.type==='transcript')console.log('Parakeet test transcript:',message.text);
    if(message.type==='tool'){if(message.action.action!=='navigate'||message.action.page!=='Progress'){finish(new Error('Unexpected action from test speech'));return;}acted=true;console.log('Actual ASR-driven tool:',JSON.stringify(message.action));ws.send(JSON.stringify({type:'toolResult',id:message.id,result:{ok:true,message:'Synthetic verification client opened Progress.'}}));}
    if(message.type==='audio'&&acted)audioBytes+=Buffer.from(message.data,'base64').length;

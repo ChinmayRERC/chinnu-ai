@@ -24,4 +24,4 @@ services:
       - key: NVIDIA_VISION_MODEL
         value: nvidia/nemotron-3.5-super-vl-120b-a12b
       - key: NVIDIA_VOICE
-        value: Magpie-Multilingual.EN-US.Aria.Calm
+        value: Magpie-Multilingual.HI-IN.Aria
