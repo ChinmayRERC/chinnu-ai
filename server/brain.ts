@@ -14,9 +14,10 @@ export type History={role:'user'|'assistant'|'tool';content:string|null;tool_cal
 export type BrainResult={text:string;actions:AgentAction[]};
 const routingGuide='Page routing is exact: for entering or viewing water, sleep, weight, steps, activity or glucose measurements navigate to Health, not Today. Food diaries and recipes use Nutrition. Session history uses Progress; mood/energy check-ins use Journal. Use Today only for the home overview. If the user requests a measurement but gives no amount, ask for it or open Health; do not invent a value.';
 function normalized(text:string){return text.trim().toLowerCase().replace(/[.!?]+$/,'').replace(/^please\s+/,'');}
+export function wakeCommand(text:string){const match=text.trim().match(/^(?:hey[\s,]+)?(?:chinnu|chinu|chanu|chinoo?)[,.!?\s]*(.*)$/i);return match?match[1].trim():null;}
 /** Fast explicit commands avoid an unnecessary cloud LLM hop. No free-form values are inferred. */
 export function quickAction(text:string):AgentAction|null{
- const s=normalized(text).replace(/^(?:hey\s+)?(?:chinnu|chinu|chanu|chinoo?)[,.]?\s*/,'');
+ const s=normalized(wakeCommand(text)??text);
  if(/^(pause|pause (my |the )?(session|workout|practice))$/.test(s))return{action:'control_session',command:'pause'};
  if(/^(resume|resume (my |the )?(session|workout|practice))$/.test(s))return{action:'control_session',command:'resume'};
  if(/^(stop|finish|end)( (my |the )?(session|workout|practice))?$/.test(s))return{action:'control_session',command:'stop'};

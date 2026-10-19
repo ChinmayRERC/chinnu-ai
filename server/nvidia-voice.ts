@@ -2,7 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {WebSocket} from 'ws';
 import {z} from 'zod';
 import {synthesizeStream,transcribe} from './nvidia';
-import {planAgent,quickAction,appStateSchema,type AppState,type History} from './brain';
+import {planAgent,quickAction,wakeCommand,appStateSchema,type AppState,type History} from './brain';
 import {UtteranceBuffer} from './audio';
 import {library} from '../src/exercises/engine';
 import type {AgentAction,ActionResult} from '../src/agent/actions';
@@ -31,7 +31,7 @@ export class NvidiaVoiceSession {
   return new Promise((resolve,reject)=>{const cleanup=()=>{clearTimeout(timer);signal.removeEventListener('abort',abort);this.pending.delete(id);};const abort=()=>{cleanup();reject(new Error('Cancelled'));};const timer=setTimeout(()=>{cleanup();resolve({ok:false,message:'The app did not finish that action. Please check its screen; do not assume it succeeded.'});},12000);this.pending.set(id,{resolve:r=>{cleanup();resolve(r);},timer,abort,signal});signal.addEventListener('abort',abort,{once:true});this.send({type:'tool',id,action});});
  }
  private async respond(text:string,signal:AbortSignal){
-  const wake=text.trim().match(/^(?:hey\s+)?(?:chinnu|chinu|chanu|chinoo?)[,.!?\s]*(.*)$/i);if(wake){this.awakeUntil=Date.now()+30000;text=wake[1].trim();if(!text){await this.speech('Yes?',signal);return;}}else if(Date.now()>this.awakeUntil){this.send({type:'notice',text:'Say “Hey Chinnu” followed by your request.'});return;}else this.awakeUntil=Date.now()+30000;
+  const wake=wakeCommand(text);if(wake!==null){this.awakeUntil=Date.now()+30000;text=wake;if(!text){await this.speech('Yes, I am listening.',signal);return;}}else if(Date.now()>this.awakeUntil){this.send({type:'notice',text:'Say “Hey Chinnu” or “Chinnu” followed by your request.'});return;}else this.awakeUntil=Date.now()+30000;
   if(++this.turns>120)throw new Error('Session turn limit reached. Reconnect to continue.');
   this.send({type:'transcript',text});if(!quickAction(text))this.charge();
   let plan;try{plan=await planAgent(text,this.state,this.history,signal,()=>this.charge());}catch(error){if(signal.aborted)return;if(error instanceof ModelUnavailableError){await this.speech('The decision models are busy. I have not changed anything. Please try a short command or use the app buttons.',signal);return;}throw error;}if(signal.aborted)return;
