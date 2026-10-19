@@ -2,7 +2,7 @@ import { z } from 'zod';
 import raw from './library.json';
 export type Point={x:number;y:number;z?:number;visibility?:number;presence?:number};
 const rule=z.object({feature:z.string(),min:z.number(),max:z.number(),cue:z.string(),explanation:z.string()});
-const schema=z.object({id:z.string(),name:z.string(),category:z.enum(['Gym','Yoga','Breathing']),view:z.enum(['Side','Front']),feature:z.string().optional(),phase:z.object({low:z.number(),high:z.number()}).optional(),rules:z.array(rule),seconds:z.number(),restricted:z.boolean(),expertReviewNeeded:z.boolean()});
+const schema=z.object({id:z.string(),name:z.string(),category:z.enum(['Gym','Yoga','Breathing']),view:z.enum(['Side','Front']),muscles:z.array(z.string()).min(1),feature:z.string().optional(),phase:z.object({low:z.number(),high:z.number()}).optional(),rules:z.array(rule),seconds:z.number(),restricted:z.boolean(),expertReviewNeeded:z.boolean()});
 export const library=z.array(schema).parse(raw);
 export type Exercise=z.infer<typeof schema>;
 export type Flag={time:number;rep:number;feature:string;value:number;min:number;max:number;cue:string;explanation:string};
