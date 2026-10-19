@@ -8,11 +8,11 @@ import {library} from '../src/exercises/engine';
 import type {AgentAction,ActionResult} from '../src/agent/actions';
 import type {AccessStore,AppSession} from './access';
 import {ModelUnavailableError} from './model-client';
-export const poseContextSchema=z.object({exercise:z.string().max(80),rep:z.number().min(0).max(10000),tracking:z.enum(['reliable','unreliable']),measuredAngles:z.record(z.number().min(-360).max(360)),cue:z.string().max(240),score:z.number().min(0).max(100).nullable()});
+export const poseContextSchema=z.object({exercise:z.string().max(80),rep:z.number().min(0).max(10000),tracking:z.enum(['reliable','unreliable']),phase:z.string().max(30),view:z.enum(['Side','Front']),frameConfirmed:z.boolean(),measuredAngles:z.record(z.number().min(-360).max(360)),cue:z.string().max(240),score:z.number().min(0).max(100).nullable()});
 const resultSchema=z.object({ok:z.boolean(),message:z.string().max(1500),data:z.unknown().optional(),requiresUserAction:z.boolean().optional()});
 const coachingSchema=z.object({kind:z.enum(['correction','tracking','encouragement']),text:z.string().max(400),measurement:z.object({feature:z.string().max(40),value:z.number().min(0).max(180),min:z.number(),max:z.number()}).optional()});
 export class NvidiaVoiceSession {
- private collector=new UtteranceBuffer();private job:AbortController|null=null;private closed=false;private lastCoach=0;private lastContext=0;private turns=0;private awakeUntil=0;
+ private collector=new UtteranceBuffer();private job:AbortController|null=null;private closed=false;private lastCoach=0;private lastContext=0;private setupUnclearSince=0;private lastClarification=0;private turns=0;private awakeUntil=0;
  private state:AppState={page:'Today',exerciseId:null,availableExercises:[],conservativeMode:true};private history:History;private pose:z.infer<typeof poseContextSchema>|undefined;
  private pending=new Map<string,{resolve:(r:ActionResult)=>void;timer:ReturnType<typeof setTimeout>;abort:()=>void;signal:AbortSignal}>();
  constructor(private socket:WebSocket,private access:AccessStore,private appSession:AppSession){this.history=appSession.history;}
@@ -50,7 +50,7 @@ export class NvidiaVoiceSession {
   if(data.type==='audio'&&!this.job&&typeof data.data==='string'&&data.data.length<=16000&&/^[A-Za-z0-9+/]*={0,2}$/.test(data.data)){
    const utterance=this.collector.push(Buffer.from(data.data,'base64'));if(utterance)this.run(async signal=>{this.charge();const text=await transcribe(utterance,signal);if(text&&!signal.aborted)await this.respond(text,signal);});return;
   }
-  if(data.type==='context'){const parsed=poseContextSchema.safeParse(data.value);if(parsed.success&&library.some(e=>e.name===parsed.data.exercise)){this.pose=parsed.data;this.lastContext=Date.now();}return;}
+  if(data.type==='context'){const parsed=poseContextSchema.safeParse(data.value);if(parsed.success&&library.some(e=>e.name===parsed.data.exercise)){const now=Date.now();this.pose=parsed.data;this.lastContext=now;if(!parsed.data.frameConfirmed&&parsed.data.tracking==='unreliable'){this.setupUnclearSince||=now;if(!this.job&&now-this.setupUnclearSince>4000&&now-this.lastClarification>15000){this.lastClarification=now;this.run(signal=>this.speech(`I cannot see all the joints needed for ${parsed.data.exercise}. Are you fully in frame in the ${parsed.data.view.toLowerCase()} view?`,signal));}}else this.setupUnclearSince=0;}return;}
   if(data.type==='coach'&&!this.job&&this.pose&&Date.now()-this.lastContext<12000&&Date.now()-this.lastCoach>=7000){
    const event=coachingSchema.safeParse(data.value);if(!event.success)return;const exercise=library.find(e=>e.name===this.pose!.exercise)!;
    let text='';if(event.data.kind==='correction'){const m=event.data.measurement;const rule=m?exercise.rules.find(r=>r.feature===m.feature&&r.min===m.min&&r.max===m.max):undefined;if(!m||!rule||this.pose.tracking!=='reliable'||m.value>=m.min&&m.value<=m.max)return;text=rule.cue;}
