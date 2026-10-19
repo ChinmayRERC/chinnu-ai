@@ -20,6 +20,11 @@ export function features(points:Point[],width:number,height:number):Record<strin
  if(visible(p[11])&&visible(p[12]))out.shoulderTilt=Math.atan2(Math.abs(p[11].y-p[12].y),Math.abs(p[11].x-p[12].x))*180/Math.PI;
  return out;
 }
+export function canTrackExercise(exercise:Exercise,points:Point[],width:number,height:number){
+ const measured=features(points,width,height);
+ const required=[...new Set([...exercise.rules.map(r=>r.feature),...(exercise.feature?[exercise.feature]:[])])];
+ return required.length?required.every(name=>Number.isFinite(measured[name])):[11,12,23,24].every(i=>visible(points[i]));
+}
 class OneEuro {
  value:number|undefined;derivative=0;time:number|undefined;
  filter(x:number,t:number){if(this.time===undefined||t-this.time>1||t<=this.time){this.value=x;this.time=t;this.derivative=0;return x;}const dt=t-this.time;const alpha=(cutoff:number)=>1/(1+1/(2*Math.PI*cutoff*dt));this.derivative+=alpha(1)*((x-this.value!)/dt-this.derivative);this.value!+=alpha(1+.015*Math.abs(this.derivative))*(x-this.value!);this.time=t;return this.value!;}
@@ -32,14 +37,13 @@ export class MovementEngine {
  const gap=this.previous===null?0:time-this.previous;this.previous=time;
  if(gap>1||gap<0){this.phase='ready';this.start=null;this.filters.clear();this.violation.clear();}
  const f=features(points,width,height);for(const [k,v]of Object.entries(f)){if(!this.filters.has(k))this.filters.set(k,new OneEuro());f[k]=this.filters.get(k)!.filter(v,time);}
- const needs=[...this.exercise.rules.map(r=>r.feature),...(this.exercise.feature?[this.exercise.feature]:[])];
- const tracked=needs.length?needs.every(k=>Number.isFinite(f[k])):[11,12,23,24].every(i=>visible(points[i]));
+ const tracked=canTrackExercise(this.exercise,points,width,height);
  const result=(score:number|null,cue:string,flags:Flag[]=[]):Sample=>({time,score,tracked,phase:this.phase,reps:this.reps,hold:this.hold,cue,features:f,flags});
  if(!tracked){this.phase='ready';this.start=null;this.violation.clear();this.filters.clear();return result(null,'Step into frame · keep required joints visible');}
- if(this.exercise.phase&&this.exercise.feature){const v=f[this.exercise.feature],{low,high}=this.exercise.phase;
- if(this.phase==='ready'&&v>high){this.phase='up';this.stageAt=time;}
- else if(this.phase==='up'&&v<low&&time-this.stageAt>.25){this.phase='down';this.stageAt=time;}
- else if(this.phase==='down'&&v>high&&time-this.stageAt>.25){this.reps++;this.phase='up';this.stageAt=time;}
+ if(this.exercise.phase&&this.exercise.feature){const v=f[this.exercise.feature],{low,high}=this.exercise.phase;const tolerance=3;
+ if(this.phase==='ready'&&v>=high-tolerance){this.phase='up';this.stageAt=time;}
+ else if(this.phase==='up'&&v<=low+tolerance&&time-this.stageAt>.25){this.phase='down';this.stageAt=time;}
+ else if(this.phase==='down'&&v>=high-tolerance&&time-this.stageAt>.25){this.reps++;this.phase='up';this.stageAt=time;}
  }
  let penalty=0;const flags:Flag[]=[];let cue='Keep a comfortable, controlled pace';
  for(const r of this.exercise.rules){const v=f[r.feature],delta=Math.max(r.min-v,v-r.max,0);penalty+=Math.min(40,delta*2);

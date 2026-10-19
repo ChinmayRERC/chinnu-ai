@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {ArrowLeft,Camera,Mic,Pause,Play,Square,Upload,Volume2} from 'lucide-react';
-import {MovementEngine,type Exercise,type Sample,type Point} from '../exercises/engine';
+import {canTrackExercise,MovementEngine,type Exercise,type Sample,type Point} from '../exercises/engine';
 import {createEstimator,drawSkeleton,type PoseEstimator} from '../pose/estimator';
 import {VoiceCoach} from '../feedback/voice';
 import {speak,stopSpeech} from '../feedback/speech';
@@ -41,7 +41,7 @@ export default function Trainer({exercise,onClose,onSaved}:{exercise:Exercise;on
     if(performance.now()-lastContext.current>4000){voice.current?.sendContext({exercise:exercise.name,rep:result.reps,tracking:result.tracked?'reliable':'unreliable',measuredAngles:result.features,cue:result.cue,score:result.score});lastContext.current=performance.now();}
     if(soundRef.current){const event=coaching.current.next(result,performance.now()/1000);if(event){setVoiceText(event.text);if(voice.current?.connected){voice.current.coach(event);}else void speak(event.text).catch(e=>setError(e.message));}}
     if(performance.now()-lastPaint>120){setSample(result);lastPaint=performance.now();}
-   }else{setSample({time:t,score:null,tracked:points.filter((p:Point)=>(p.visibility??0)>.65).length>22,phase:'setup',reps:0,hold:0,cue:'Check your full body is visible. Confirm the required camera view.',features:{},flags:[]});}
+   }else{setSample({time:t,score:null,tracked:canTrackExercise(exercise,points,c.width,c.height),phase:'setup',reps:0,hold:0,cue:'Check your required joints are visible. Confirm the required camera view.',features:{},flags:[]});}
    frames++;if(performance.now()-lastFPS>1000){setFps(Math.round(frames*1000/(performance.now()-lastFPS)));frames=0;lastFPS=performance.now();}
    if(fileRef.current)setProgress(v.currentTime/v.duration*100);
   }
