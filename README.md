@@ -10,7 +10,7 @@ Open the app, complete local onboarding and tap **Ask Chinnu**. Type a request o
 
 NVIDIA speech is currently English: Parakeet recognizes short utterances after a pause; Nemotron handles complex requests; Magpie speaks calm replies. Explicit commands such as “Open my progress”, “Pause”, “Show me how to do a squat” and a specified water amount use a fast validated command path without an unnecessary LLM hop. App results are acknowledged before the assistant confirms them.
 
-Echo cancellation suppresses Chinnu's own output, while sustained user speech automatically interrupts playback and resumes listening; **Interrupt · listen** remains available as a manual fallback. This is a short-utterance voice pipeline, not always-listening background Siri integration. Camera permissions, file selection and destructive/export confirmations remain on device.
+After microphone consent and connection, say **“Hey Chinnu”** or **“Chinnu”** followed by a command while the app is open. Echo cancellation suppresses Chinnu's output, while sustained user speech interrupts playback; **Interrupt · listen** remains a fallback. Browsers cannot silently grant camera/microphone permissions or provide OS-wide background wake-word access.
 
 ## Features
 

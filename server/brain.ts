@@ -16,7 +16,7 @@ const routingGuide='Page routing is exact: for entering or viewing water, sleep,
 function normalized(text:string){return text.trim().toLowerCase().replace(/[.!?]+$/,'').replace(/^please\s+/,'');}
 /** Fast explicit commands avoid an unnecessary cloud LLM hop. No free-form values are inferred. */
 export function quickAction(text:string):AgentAction|null{
- const s=normalized(text);
+ const s=normalized(text).replace(/^(?:hey\s+)?(?:chinnu|chinu|chanu|chinoo?)[,.]?\s*/,'');
  if(/^(pause|pause (my |the )?(session|workout|practice))$/.test(s))return{action:'control_session',command:'pause'};
  if(/^(resume|resume (my |the )?(session|workout|practice))$/.test(s))return{action:'control_session',command:'resume'};
  if(/^(stop|finish|end)( (my |the )?(session|workout|practice))?$/.test(s))return{action:'control_session',command:'stop'};
@@ -34,6 +34,7 @@ export function quickAction(text:string):AgentAction|null{
  const aliases:Record<string,string>={'squat':'squat','squats':'squat','push-up':'pushup','push-ups':'pushup','pushup':'pushup','lunge':'lunge','plank':'plank','bicep curl':'curl','hip hinge':'hinge','mountain':'mountain','mountain pose':'mountain','warrior ii':'warrior','tree':'tree','chair':'chair','triangle':'triangle','downward dog':'dog','cobra':'cobra',"childs pose":'child',"child’s pose":'child','seated breathing':'breathing'};
  const guide=s.match(/^(?:show me how to do|show me|show|explain)(?: the| a| an)? (.+?)(?: guide)?$/);if(guide&&aliases[guide[1]])return{action:'show_guide',exerciseId:aliases[guide[1]] as AgentAction['exerciseId']};
  const start=s.match(/^(?:open|start|practice)(?: the| a| an)? (.+)$/);if(start&&aliases[start[1]])return{action:'open_exercise',exerciseId:aliases[start[1]] as AgentAction['exerciseId']};
+ if(/^(open|start|turn on)( the)? camera$/.test(s))return{action:'open_camera'};
  return null;
 }
 export function textReady(){return process.env.TEXT_PROVIDER==='nvidia'?!!(process.env.NVIDIA_API_KEY??process.env.NVIDIA_TTS_KEY):!!process.env.GEMINI_API_KEY;}

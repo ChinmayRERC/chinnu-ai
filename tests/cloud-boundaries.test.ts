@@ -17,5 +17,6 @@ describe('bounded short-utterance audio',()=>{
 });
 describe('quick agent commands',()=>{
  it('maps explicit app commands without hallucinating quantities',()=>{expect(quickAction('Open my progress.')).toEqual({action:'navigate',page:'Progress'});expect(quickAction('Log 250 milliliters of water')).toEqual({action:'log_water',amount:250});expect(quickAction('Log some water')).toBeNull();expect(quickAction('Show me how to do a squat')).toEqual({action:'show_guide',exerciseId:'squat'});});
+ it('accepts wake-word commands and bounded ASR variants for in-app control',()=>{expect(quickAction('Hey Chinnu, open camera')).toEqual({action:'open_camera'});expect(quickAction('Chinnu pause my workout')).toEqual({action:'control_session',command:'pause'});expect(quickAction('Hey Chanu, open my progress')).toEqual({action:'navigate',page:'Progress'});expect(quickAction('Hey Chinu, open my progress')).toEqual({action:'navigate',page:'Progress'});});
  it('does not match negated or unrelated stop/pain phrases',()=>{expect(quickAction("Don’t stop")).toBeNull();expect(quickAction("I don’t feel pain")).toBeNull();expect(quickAction('stop reading my messages')).toBeNull();expect(quickAction('Stop, that hurts')).toEqual({action:'control_session',command:'pain'});});
 });

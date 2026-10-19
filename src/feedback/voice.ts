@@ -14,7 +14,7 @@ export function connectionHelp(url:string){return /https?:\/\/(localhost|127\.0\
 async function request(url:string,options:RequestInit){const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),65000);try{return await fetch(url,{...options,signal:controller.signal});}finally{clearTimeout(timer);}}
 export async function checkBackend(value:string){const url=backendURL(value);let response:Response;try{response=await request(`${url}/health`,{});}catch{throw new Error(connectionHelp(url));}if(!response.ok)throw new Error(`Backend health check returned HTTP ${response.status}.`);return await response.json() as {status:string;voiceConfigured:boolean};}
 export class VoiceCoach {
- private socket?:WebSocket;private context?:AudioContext;private stream?:MediaStream;private node?:AudioWorkletNode;private source?:MediaStreamAudioSourceNode;private gain?:GainNode;private nextTime=0;private outputs:AudioBufferSourceNode[]=[];private version=0;private ready=false;private pendingUntil=0;private bargeFrames=0;
+ private socket?:WebSocket;private context?:AudioContext;private stream?:MediaStream;private node?:AudioWorkletNode;private source?:MediaStreamAudioSourceNode;private gain?:GainNode;private nextTime=0;private outputs:AudioBufferSourceNode[]=[];private version=0;private ready=false;private pendingUntil=0;private bargeFrames=0;private ambient=.004;
  constructor(private status:(value:string)=>void,private text:(value:string)=>void,private command:(value:string)=>void,private execute?:ExecuteAction){}
  get connected(){return this.ready&&this.socket?.readyState===WebSocket.OPEN;}
  get busy(){return this.outputs.length>0||Date.now()<this.pendingUntil;}
@@ -36,7 +36,7 @@ export class VoiceCoach {
      ws.onopen=()=>ws.send(JSON.stringify({type:'auth',token}));
     ws.onmessage=e=>{if(this.version!==version)return;try{const msg=JSON.parse(e.data);
      if(msg.type==='ready'&&!this.ready){clearTimeout(timeout);this.ready=true;this.status('Listening');this.source=this.context!.createMediaStreamSource(this.stream!);this.node=new AudioWorkletNode(this.context!,'microphone');this.gain=this.context!.createGain();this.gain.gain.value=0;this.source.connect(this.node);this.node.connect(this.gain);this.gain.connect(this.context!.destination);
-       this.node.port.onmessage=event=>{if(ws.readyState!==WebSocket.OPEN||ws.bufferedAmount>65536)return;const values=event.data as Float32Array;let square=0;for(const value of values)square+=value*value;const rms=Math.sqrt(square/Math.max(1,values.length));if(this.busy){this.bargeFrames=rms>.04?this.bargeFrames+1:0;if(this.bargeFrames<10)return;this.bargeFrames=0;this.interrupt();}const ratio=this.context!.sampleRate/16000;const pcm=new Int16Array(Math.floor(values.length/ratio));for(let i=0;i<pcm.length;i++)pcm[i]=Math.max(-1,Math.min(1,values[Math.floor(i*ratio)]))*32767;let binary='';for(const v of new Uint8Array(pcm.buffer))binary+=String.fromCharCode(v);ws.send(JSON.stringify({type:'audio',data:btoa(binary)}));};settled=true;resolve();
+       this.node.port.onmessage=event=>{if(ws.readyState!==WebSocket.OPEN||ws.bufferedAmount>65536)return;const values=event.data as Float32Array;let square=0;for(const value of values)square+=value*value;const rms=Math.sqrt(square/Math.max(1,values.length));if(!this.busy&&rms<this.ambient*2.5)this.ambient=this.ambient*.98+rms*.02;if(this.busy){const threshold=Math.max(.025,this.ambient*4);this.bargeFrames=rms>threshold?this.bargeFrames+1:0;if(this.bargeFrames<8)return;this.bargeFrames=0;this.interrupt();}const ratio=this.context!.sampleRate/16000;const pcm=new Int16Array(Math.floor(values.length/ratio));for(let i=0;i<pcm.length;i++)pcm[i]=Math.max(-1,Math.min(1,values[Math.floor(i*ratio)]))*32767;let binary='';for(const v of new Uint8Array(pcm.buffer))binary+=String.fromCharCode(v);ws.send(JSON.stringify({type:'audio',data:btoa(binary)}));};settled=true;resolve();
      }
      if(msg.type==='text')this.text(msg.text);
      if(msg.type==='transcript')this.text(`Heard: ${msg.text}`);
@@ -50,7 +50,7 @@ export class VoiceCoach {
      if(msg.type==='audio')this.play(msg.data,msg.rate??24000);
      if(msg.type==='turnComplete')this.pendingUntil=0;
      if(msg.type==='interrupted'){this.stopOutput();this.pendingUntil=0;}
-     if(msg.type==='error'){this.stopOutput();this.pendingUntil=0;if(!settled)fail(msg.error);else this.text(msg.error);}
+     if(msg.type==='error'){this.stopOutput();this.pendingUntil=0;this.rememberFailure('provider');if(!settled)fail(msg.error);else this.text(msg.error);}
     }catch{fail('Could not process voice response. Local coaching is available.');}};
     ws.onerror=()=>fail(connectionHelp(url));ws.onclose=()=>fail('Cloud voice disconnected. Reconnect when ready; automatic local coaching continues.');
    });
@@ -63,5 +63,6 @@ export class VoiceCoach {
   request(text:string){if(!this.connected)return false;this.socket!.send(JSON.stringify({type:'request',text:text.slice(0,1500)}));return true;}
   interrupt(){this.stopOutput();this.pendingUntil=0;this.bargeFrames=0;if(this.connected)this.socket!.send(JSON.stringify({type:'interrupt'}));}
  coach(event:CoachingEvent){if(!this.connected||this.busy)return false;this.socket!.send(JSON.stringify({type:'coach',value:event}));this.pendingUntil=Date.now()+10000;return true;}
+ private rememberFailure(kind:string){try{const key='chinnu-voice-learning';const current=JSON.parse(localStorage.getItem(key)??'{}');current[kind]=Math.min(1000,(current[kind]??0)+1);current.updated=new Date().toISOString();localStorage.setItem(key,JSON.stringify(current));}catch{}}
  disconnect(){this.version++;this.ready=false;this.pendingUntil=0;this.bargeFrames=0;const ws=this.socket;this.socket=undefined;if(ws){ws.onclose=null;ws.onerror=null;ws.onmessage=null;ws.close();}this.node?.disconnect();this.source?.disconnect();this.gain?.disconnect();this.stream?.getTracks().forEach(t=>t.stop());this.stopOutput();void this.context?.close();this.context=undefined;this.stream=undefined;this.status('Disconnected');}
 }

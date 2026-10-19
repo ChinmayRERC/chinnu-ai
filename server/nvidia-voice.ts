@@ -12,7 +12,7 @@ export const poseContextSchema=z.object({exercise:z.string().max(80),rep:z.numbe
 const resultSchema=z.object({ok:z.boolean(),message:z.string().max(1500),data:z.unknown().optional(),requiresUserAction:z.boolean().optional()});
 const coachingSchema=z.object({kind:z.enum(['correction','tracking','encouragement']),text:z.string().max(400),measurement:z.object({feature:z.string().max(40),value:z.number().min(0).max(180),min:z.number(),max:z.number()}).optional()});
 export class NvidiaVoiceSession {
- private collector=new UtteranceBuffer();private job:AbortController|null=null;private closed=false;private lastCoach=0;private lastContext=0;private turns=0;
+ private collector=new UtteranceBuffer();private job:AbortController|null=null;private closed=false;private lastCoach=0;private lastContext=0;private turns=0;private awakeUntil=0;
  private state:AppState={page:'Today',exerciseId:null,availableExercises:[],conservativeMode:true};private history:History;private pose:z.infer<typeof poseContextSchema>|undefined;
  private pending=new Map<string,{resolve:(r:ActionResult)=>void;timer:ReturnType<typeof setTimeout>;abort:()=>void;signal:AbortSignal}>();
  constructor(private socket:WebSocket,private access:AccessStore,private appSession:AppSession){this.history=appSession.history;}
@@ -31,6 +31,7 @@ export class NvidiaVoiceSession {
   return new Promise((resolve,reject)=>{const cleanup=()=>{clearTimeout(timer);signal.removeEventListener('abort',abort);this.pending.delete(id);};const abort=()=>{cleanup();reject(new Error('Cancelled'));};const timer=setTimeout(()=>{cleanup();resolve({ok:false,message:'The app did not finish that action. Please check its screen; do not assume it succeeded.'});},12000);this.pending.set(id,{resolve:r=>{cleanup();resolve(r);},timer,abort,signal});signal.addEventListener('abort',abort,{once:true});this.send({type:'tool',id,action});});
  }
  private async respond(text:string,signal:AbortSignal){
+  const wake=text.trim().match(/^(?:hey\s+)?(?:chinnu|chinu|chanu|chinoo?)[,.!?\s]*(.*)$/i);if(wake){this.awakeUntil=Date.now()+30000;text=wake[1].trim();if(!text){await this.speech('Yes?',signal);return;}}else if(Date.now()>this.awakeUntil){this.send({type:'notice',text:'Say “Hey Chinnu” followed by your request.'});return;}else this.awakeUntil=Date.now()+30000;
   if(++this.turns>120)throw new Error('Session turn limit reached. Reconnect to continue.');
   this.send({type:'transcript',text});if(!quickAction(text))this.charge();
   let plan;try{plan=await planAgent(text,this.state,this.history,signal,()=>this.charge());}catch(error){if(signal.aborted)return;if(error instanceof ModelUnavailableError){await this.speech('The decision models are busy. I have not changed anything. Please try a short command or use the app buttons.',signal);return;}throw error;}if(signal.aborted)return;
